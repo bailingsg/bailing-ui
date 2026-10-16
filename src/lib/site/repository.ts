@@ -1,5 +1,6 @@
 import { footerColumns, mainNav, primaryCta } from '@/config/site';
 import { apiGet, isApiSource, isNotFound, qs } from '@/lib/cms-api';
+import { CmsRevalidate, CmsTags } from '@/lib/cms-tags';
 import type {
   NavLocation,
   PublicNavItem,
@@ -43,7 +44,10 @@ export async function getNavItems(location: NavLocation): Promise<PublicNavItem[
     }));
   }
 
-  const result = await apiGet<{ items: PublicNavItem[] }>(`/public/navigation${qs({ location })}`);
+  const result = await apiGet<{ items: PublicNavItem[] }>(`/public/navigation${qs({ location })}`, {
+    tags: [CmsTags.navigation],
+    revalidate: CmsRevalidate.STABLE,
+  });
   return result.items;
 }
 
@@ -51,7 +55,10 @@ export async function getNavItems(location: NavLocation): Promise<PublicNavItem[
 export async function getSiteSections(page: SitePageKey): Promise<SiteSection[]> {
   if (!isApiSource()) return [];
 
-  const result = await apiGet<{ items: SiteSection[] }>(`/public/site/${page}`);
+  const result = await apiGet<{ items: SiteSection[] }>(`/public/site/${page}`, {
+    tags: [CmsTags.site],
+    revalidate: CmsRevalidate.STABLE,
+  });
   return result.items;
 }
 
@@ -63,7 +70,10 @@ export async function getSiteSection(
   if (!isApiSource()) return null;
 
   try {
-    return await apiGet<SiteSection>(`/public/site/${page}/${sectionKey}`);
+    return await apiGet<SiteSection>(`/public/site/${page}/${sectionKey}`, {
+      tags: [CmsTags.site],
+      revalidate: CmsRevalidate.STABLE,
+    });
   } catch (error) {
     if (isNotFound(error)) return null;
     throw error;
@@ -72,3 +82,51 @@ export async function getSiteSection(
 
 /** 主 CTA（演示与 API 模式共用：站点级配置，不属于内容分区） */
 export const sitePrimaryCta = primaryCta;
+
+/** 页面 SEO 元数据（由 CMS 分区派生，缺失字段由页面回退到程序默认值） */
+export interface CmsPageSeo {
+  title?: string;
+  description?: string;
+  /** 分享图（分区媒体，可能为 null） */
+  ogImage?: string | null;
+  ogImageAlt?: string;
+}
+
+/** 描述长度上限：过长的正文不适合直接作为 meta description */
+const SEO_DESCRIPTION_MAX = 300;
+
+function clampDescription(value: string | null | undefined): string | undefined {
+  const text = (value ?? '').trim().replace(/\s+/g, ' ');
+  if (!text) return undefined;
+  return text.length > SEO_DESCRIPTION_MAX ? `${text.slice(0, SEO_DESCRIPTION_MAX - 1)}…` : text;
+}
+
+/**
+ * 从指定页面的分区派生页面级 SEO（Phase 4.8）。
+ *
+ * 用途：首页 / 关于我们 / 联系页的 metadata 需要**跟随 CMS 立即变化**
+ * （任务书第十六~十八节）。这些页面没有独立的 SEO 字段，
+ * 因此以「hero 分区」的 title / subtitle（其次 body）作为来源；
+ * 分区不存在（demo 模式或未发布）时返回空对象，页面回退程序默认值。
+ *
+ * 不编造：只使用 CMS 中真实存在的文案。
+ */
+export async function getCmsPageSeo(
+  page: SitePageKey,
+  sectionKey: string,
+): Promise<CmsPageSeo> {
+  const sections = await getSiteSections(page);
+  const section = sections.find((item) => item.sectionKey === sectionKey);
+  if (!section) return {};
+
+  const title = (section.title ?? '').trim() || undefined;
+  const description =
+    clampDescription(section.subtitle) ?? clampDescription(section.body) ?? undefined;
+
+  return {
+    ...(title ? { title } : {}),
+    ...(description ? { description } : {}),
+    ogImage: section.media?.url ?? null,
+    ...(section.media?.altText ? { ogImageAlt: section.media.altText } : {}),
+  };
+}

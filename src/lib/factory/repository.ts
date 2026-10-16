@@ -1,5 +1,6 @@
 import { allImages, factoryImages, qualityImages } from './demo-data';
 import { apiGet, isApiSource } from '@/lib/cms-api';
+import { CmsRevalidate, CmsTags } from '@/lib/cms-tags';
 import type {
   FactoryImage,
   FactoryImageCategory,
@@ -95,23 +96,27 @@ interface ApiFactorySectionDetail extends ApiFactorySectionListItem {
   seoDescription: string | null;
 }
 
-let apiImageCache: FactoryImage[] | null = null;
-
 /**
  * 拉取全站已发布工厂素材（api 模式）。
  *
- * 一次列表 + N 个详情**并行**请求（分区数量为个位数，非串行 N+1）；
- * 进程内单次缓存，避免同一次渲染里多个分类各自重复拉取。
+ * 一次列表 + N 个详情**并行**请求（分区数量为个位数，非串行 N+1）。
+ *
+ * 注意（Phase 4.8）：这里**不再使用进程级模块缓存**。模块缓存会绕过
+ * Next 的数据缓存与 revalidateTag —— 后台删除素材后前台仍读旧值。
+ * 同一次渲染内的重复调用由 Next 的 fetch 去重（同一 URL 只请求一次）承担，
+ * 跨请求的复用交给带 tag 的 ISR 缓存。
  */
 async function fetchApiImages(): Promise<FactoryImage[]> {
-  if (apiImageCache) return apiImageCache;
-
   const list = await apiGet<{ items: ApiFactorySectionListItem[]; total: number }>(
     '/public/factory',
+    { tags: [CmsTags.factory], revalidate: CmsRevalidate.STABLE },
   );
   const details = await Promise.all(
     list.items.map((item) =>
-      apiGet<ApiFactorySectionDetail>(`/public/factory/${encodeURIComponent(item.slug)}`),
+      apiGet<ApiFactorySectionDetail>(`/public/factory/${encodeURIComponent(item.slug)}`, {
+        tags: [CmsTags.factory],
+        revalidate: CmsRevalidate.STABLE,
+      }),
     ),
   );
 
@@ -145,8 +150,7 @@ async function fetchApiImages(): Promise<FactoryImage[]> {
     });
   }
 
-  apiImageCache = sortImages(images);
-  return apiImageCache;
+  return sortImages(images);
 }
 
 /** 按分类取图片（单分类） */
@@ -214,12 +218,14 @@ export async function getFactoryOverview(): Promise<{
 
   const list = await apiGet<{ items: ApiFactorySectionListItem[]; total: number }>(
     '/public/factory',
+    { tags: [CmsTags.factory], revalidate: CmsRevalidate.STABLE },
   );
   const overview = list.items.find((item) => item.sectionType === 'OVERVIEW');
   if (!overview) return null;
 
   const detail = await apiGet<ApiFactorySectionDetail>(
     `/public/factory/${encodeURIComponent(overview.slug)}`,
+    { tags: [CmsTags.factory], revalidate: CmsRevalidate.STABLE },
   );
   return {
     title: detail.title,

@@ -11,14 +11,23 @@ import { OptimizedImage } from '@/components/common/optimized-image';
 import { SiteSectionContent, SiteCtaLink } from '@/components/cms/site-section-block';
 import { buildMetadata } from '@/lib/seo';
 import { primaryCta, siteConfig } from '@/config/site';
-import { getSiteSections } from '@/lib/site';
+import { getCmsPageSeo, getSiteSections } from '@/lib/site';
 import { getCategories, isDemoSource } from '@/lib/products';
 
-export const metadata: Metadata = buildMetadata({
-  title: 'Bailing Wooden | Wooden Products Manufacturer & B2B Export Supplier',
-  description: siteConfig.description,
-  path: '/',
-});
+/**
+ * 首页 metadata：优先使用 CMS 的 home.hero（标题 / 副标题 / 封面图），
+ * 未发布或 demo 模式时回退到程序默认值（真实品牌信息，非占位文案）。
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getCmsPageSeo('HOME', 'home.hero');
+  return buildMetadata({
+    title: seo.title ?? 'Bailing Wooden | Wooden Products Manufacturer & B2B Export Supplier',
+    absoluteTitle: true,
+    description: seo.description ?? siteConfig.description,
+    path: '/',
+    ...(seo.ogImage ? { ogImage: seo.ogImage, ogImageAlt: seo.ogImageAlt } : {}),
+  });
+}
 
 /**
  * 首页 —— 站点框架页

@@ -6,18 +6,25 @@ import { CtaBand } from '@/components/layout/cta-band';
 import { RfqForm } from '@/components/rfq/rfq-form';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { buildMetadata } from '@/lib/seo';
+import { toWhatsAppUrl } from '@/lib/format';
 import { getProductBySlug } from '@/lib/products';
-import { getSiteSections } from '@/lib/site';
+import { getCmsPageSeo, getSiteSections } from '@/lib/site';
 import { getPublicContacts } from '@/lib/contacts';
 import type { RfqProductRef } from '@/lib/rfq';
 import { contactInfo, siteConfig } from '@/config/site';
 
-export const metadata: Metadata = buildMetadata({
-  title: 'Contact',
-  description:
-    'Contact Bailing Wooden for quotations and product enquiries. Send your specification or drawing and our export team will respond.',
-  path: '/contact',
-});
+/** 联系页 metadata：CMS 的 contact.hero 优先，缺失时回退程序默认值 */
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getCmsPageSeo('CONTACT', 'contact.hero');
+  return buildMetadata({
+    title: seo.title ?? 'Contact',
+    description:
+      seo.description ??
+      'Contact Bailing Wooden for quotations and product enquiries. Send your specification or drawing and our export team will respond.',
+    path: '/contact',
+    ...(seo.ogImage ? { ogImage: seo.ogImage, ogImageAlt: seo.ogImageAlt } : {}),
+  });
+}
 
 /** 联系渠道（未确认前显示占位文案） */
 const channels: { title: string; value: string; hint: string }[] = [
@@ -144,7 +151,24 @@ export default async function ContactPage({
                         {contact.displayEmail}
                       </a>
                     ) : null}
-                    {contact.whatsapp ? <span>WhatsApp: {contact.whatsapp}</span> : null}
+                    {(() => {
+                      // 号码统一规范化为 https://wa.me/<国际号码>；
+                      // 无法规范化时回退纯文本（绝不产出非法 wa.me 链接）
+                      const waUrl = toWhatsAppUrl(contact.whatsapp);
+                      if (!contact.whatsapp) return null;
+                      return waUrl ? (
+                        <a
+                          href={waUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary underline underline-offset-4 transition-colors hover:text-primary-hover"
+                        >
+                          WhatsApp
+                        </a>
+                      ) : (
+                        <span>WhatsApp: {contact.whatsapp}</span>
+                      );
+                    })()}
                   </div>
                 </Card>
               ))}

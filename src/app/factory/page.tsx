@@ -21,11 +21,19 @@ import { getFactoryOverview, getImages } from '@/lib/factory';
  * 内容原则（零虚构）：不出现工厂面积、年产量、员工数量、设备数量、客户名称、
  * 合作品牌、证书编号或任何检测数据；未确认内容一律显示为"待补充"。
  */
-export const metadata: Metadata = buildMetadata({
-  title: 'Factory',
-  description: 'Manufacturing capability and production information of Bailing Wooden.',
-  path: '/factory',
-});
+/**
+ * 工厂实力页 metadata：已发布的工厂 OVERVIEW 分区标题 / 概述优先，
+ * 缺失时回退程序默认值（不编造任何产能或面积数字）。
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const overview = await getFactoryOverview();
+  return buildMetadata({
+    title: overview?.title ?? 'Factory',
+    description:
+      overview?.summary ?? 'Manufacturing capability and production information of Bailing Wooden.',
+    path: '/factory',
+  });
+}
 
 /** 生产流程（体系框架，非真实产能/参数声明） */
 const productionSteps = [

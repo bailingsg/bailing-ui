@@ -11,6 +11,7 @@ import type {
   ProductQuery,
 } from './types';
 import { apiGet, isApiSource, isNotFound, qs } from '@/lib/cms-api';
+import { CmsRevalidate, CmsTags } from '@/lib/cms-tags';
 
 /**
  * 产品数据访问层（Repository）
@@ -57,6 +58,7 @@ export async function getProducts(query: ProductQuery = {}): Promise<PaginatedPr
       category: query.category,
       featured: query.featured,
     })}`,
+    { tags: [CmsTags.products], revalidate: CmsRevalidate.CONTENT },
   );
   return result;
 }
@@ -68,7 +70,11 @@ export async function getProductBySlug(slug: string): Promise<ProductDetail | nu
   }
 
   try {
-    return await apiGet<ProductDetail>(`/products/${encodeURIComponent(slug)}`);
+    return await apiGet<ProductDetail>(`/products/${encodeURIComponent(slug)}`, {
+      // 同时挂列表 tag：产品改名 / 换图会影响列表卡片
+      tags: [CmsTags.product(slug), CmsTags.products],
+      revalidate: CmsRevalidate.CONTENT,
+    });
   } catch (error) {
     if (isNotFound(error)) return null;
     throw error;
@@ -81,7 +87,10 @@ export async function getCategories(): Promise<ProductCategory[]> {
     return demoCategories;
   }
 
-  const result = await apiGet<{ items: ProductCategory[]; total: number }>('/categories');
+  const result = await apiGet<{ items: ProductCategory[]; total: number }>('/categories', {
+    tags: [CmsTags.categories],
+    revalidate: CmsRevalidate.STABLE,
+  });
   return result.items;
 }
 
@@ -96,6 +105,9 @@ export async function getProductSlugs(): Promise<string[]> {
     return demoProducts.map((product) => product.slug);
   }
 
-  const result = await apiGet<PaginatedProducts>('/products?pageSize=48');
+  const result = await apiGet<PaginatedProducts>('/products?pageSize=48', {
+    tags: [CmsTags.products],
+    revalidate: CmsRevalidate.CONTENT,
+  });
   return result.items.map((item) => item.slug);
 }

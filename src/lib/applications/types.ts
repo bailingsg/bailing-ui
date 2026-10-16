@@ -30,6 +30,15 @@ export interface Application {
    * 只登记 slug，具体产品信息由产品数据源解析，避免两处维护同一份数据。
    */
   relatedProducts: string[];
+
+  /**
+   * CMS SEO 覆盖（Phase 4.8）。
+   * 未配置时详情页回退到「标题 + 概述」等程序默认值——绝不输出 undefined/null。
+   */
+  seo?: {
+    title?: string;
+    description?: string;
+  };
 }
 
 /** 应用场景查询条件（为未来详情页 / 分页预留） */

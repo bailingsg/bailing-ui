@@ -19,11 +19,69 @@ export interface NavItem {
 /* 基本信息                                                                    */
 /* -------------------------------------------------------------------------- */
 
-/** 站点根地址（部署时通过 NEXT_PUBLIC_SITE_URL 覆盖） */
-export const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://bailingwooden.com').replace(
-  /\/$/,
-  '',
-);
+/** 正式生产域名（canonical / OG / sitemap 的最终基准，不可被本地配置污染） */
+const PRODUCTION_SITE_URL = 'https://bailingwooden.com';
+
+const isProductionBuild = process.env.NODE_ENV === 'production';
+
+/** 判定本机 / 私网地址（这些地址绝不能出现在生产 metadata 里） */
+function isLocalOrPrivateHost(hostname: string): boolean {
+  const host = hostname.toLowerCase();
+  if (host === 'localhost' || host === '127.0.0.1' || host === '::1' || host.endsWith('.local')) {
+    return true;
+  }
+  // RFC1918 私网 + 链路本地
+  if (/^10\./.test(host)) return true;
+  if (/^192\.168\./.test(host)) return true;
+  if (/^172\.(1[6-9]|2\d|3[01])\./.test(host)) return true;
+  if (/^169\.254\./.test(host)) return true;
+  return false;
+}
+
+/**
+ * 站点根地址（部署时通过 NEXT_PUBLIC_SITE_URL 覆盖）。
+ *
+ * 安全护栏（Phase 4.8）：**生产构建下拒绝本机 / 私网地址**。
+ * 若误把 NEXT_PUBLIC_SITE_URL 配成 http://localhost:3000 或
+ * http://192.168.1.40:3000，canonical / og:url / sitemap 会写入这些地址，
+ * 导致搜索引擎收录错误域名——此处直接回退到正式域名并告警。
+ * 开发环境（NODE_ENV !== production）允许本地地址，便于联调。
+ */
+function resolveSiteUrl(): string {
+  const raw = (process.env.NEXT_PUBLIC_SITE_URL ?? '').trim();
+  if (!raw) return PRODUCTION_SITE_URL;
+  try {
+    const url = new URL(raw);
+    if (isProductionBuild && isLocalOrPrivateHost(url.hostname)) {
+      console.warn(
+        `[site] NEXT_PUBLIC_SITE_URL 指向本机/私网地址（${url.hostname}），` +
+          `生产构建已回退为 ${PRODUCTION_SITE_URL}（避免 canonical/OG 写入内网地址）`,
+      );
+      return PRODUCTION_SITE_URL;
+    }
+    return `${url.protocol}//${url.host}${url.pathname.replace(/\/$/, '')}`;
+  } catch {
+    return PRODUCTION_SITE_URL;
+  }
+}
+
+/**
+ * 是否允许搜索引擎收录（robots / 全站 metadata 的唯一开关）。
+ *
+ * 取值优先级：
+ *   1. NEXT_PUBLIC_ALLOW_INDEXING=true|false（显式配置，最高优先级）
+ *   2. 未配置时：生产构建默认 **允许**（任务要求「生产 Allow: /」），
+ *      开发环境默认禁止（避免半成品被误抓）。
+ * 如需在内容未就绪前临时封闭整站，显式设置 NEXT_PUBLIC_ALLOW_INDEXING=false 即可。
+ */
+function resolveAllowIndexing(): boolean {
+  const raw = (process.env.NEXT_PUBLIC_ALLOW_INDEXING ?? '').trim().toLowerCase();
+  if (raw === 'true') return true;
+  if (raw === 'false') return false;
+  return isProductionBuild;
+}
+
+export const siteUrl = resolveSiteUrl();
 
 export const siteConfig = {
   name: 'Bailing Wooden',
@@ -49,10 +107,14 @@ export const siteConfig = {
   ogImage: '/logo.webp',
   /**
    * 是否允许搜索引擎收录。
-   * 框架建设阶段为 false（无正式内容，避免被收录为空站）；
-   * 上线前由业务方确认内容后改为 true，即可全站开放收录。
+   *
+   * Phase 4.8：改为**环境感知**——
+   *   · 生产构建默认 true（robots 输出 Allow: /，仅屏蔽内部路径）
+   *   · 开发环境默认 false（避免半成品被误抓）
+   *   · 可用 NEXT_PUBLIC_ALLOW_INDEXING=true|false 显式覆盖
+   * 内容未就绪需要临时封闭整站时，显式设为 false 即可。
    */
-  allowIndexing: false,
+  allowIndexing: resolveAllowIndexing(),
   /** 站点语言 */
   locale: 'en_US',
   /** 联系方式未确认前，界面上统一显示的占位文案（英文，面向公开站点） */

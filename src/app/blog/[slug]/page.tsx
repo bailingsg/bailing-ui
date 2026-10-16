@@ -10,6 +10,7 @@ import { ProductCard } from '@/components/common/product-card';
 import { BlogCard } from '@/components/blog/blog-card';
 import { BlogContent } from '@/components/blog/blog-content';
 import { ArticleSchema } from '@/components/blog/article-schema';
+import { BreadcrumbSchema } from '@/components/seo/breadcrumb-schema';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { buildMetadata } from '@/lib/seo';
@@ -31,8 +32,9 @@ import { getProductBySlug, type ProductListItem } from '@/lib/products';
  * SEO：动态 metadata（title / description / canonical / article OG）+ Article JSON-LD。
  * 禁止 Product schema。
  *
- * 404 策略：与 /products/[slug] 一致关闭按需生成，未登记的 slug 返回**真正的 404**
- * （dynamicParams = true 时 notFound() 会被缓存成 HTTP 200，即"软 404"）。
+ * 404 策略：与 /products/[slug] 一致 —— 允许按需生成（dynamicParams = true），
+ * 未发布 / 已删除 / 不存在的 slug 由 notFound() 返回**真正的 HTTP 404**。
+ * （Phase 4.8 修正：`dynamicParams = false` 会让缓存失效后整页 404，详见产品详情页注释。）
  */
 
 interface BlogDetailPageProps {
@@ -45,7 +47,7 @@ export async function generateStaticParams() {
   return slugs.map((slug) => ({ slug }));
 }
 
-export const dynamicParams = false;
+export const dynamicParams = true;
 
 export async function generateMetadata({ params }: BlogDetailPageProps): Promise<Metadata> {
   const { slug } = await params;
@@ -297,6 +299,13 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
 
       {/* 结构化数据 */}
       <ArticleSchema post={post} section={category?.name} />
+      <BreadcrumbSchema
+        items={[
+          { name: 'Home', path: '/' },
+          { name: 'Blog', path: '/blog' },
+          { name: post.title, path: `/blog/${post.slug}` },
+        ]}
+      />
     </>
   );
 }

@@ -1,5 +1,6 @@
 import { blogCategories, blogPosts } from './demo-data';
 import { apiGet, isApiSource, isNotFound, qs } from '@/lib/cms-api';
+import { CmsRevalidate, CmsTags } from '@/lib/cms-tags';
 import type {
   BlogCategoryInfo,
   BlogCategorySlug,
@@ -127,6 +128,7 @@ export async function getBlogPosts(query: BlogQuery = {}): Promise<PaginatedBlog
   if (isApiSource()) {
     const result = await apiGet<ApiBlogPage>(
       `/public/blog${qs({ page, pageSize, category: query.category })}`,
+      { tags: [CmsTags.blog], revalidate: CmsRevalidate.CONTENT },
     );
     return { ...result, items: result.items.map(toSummaryFromApi) };
   }
@@ -152,7 +154,10 @@ export async function getBlogPosts(query: BlogQuery = {}): Promise<PaginatedBlog
 export async function getBlogPostBySlug(slug: string): Promise<BlogPost | null> {
   if (isApiSource()) {
     try {
-      const detail = await apiGet<ApiBlogDetail>(`/public/blog/${encodeURIComponent(slug)}`);
+      const detail = await apiGet<ApiBlogDetail>(`/public/blog/${encodeURIComponent(slug)}`, {
+        tags: [CmsTags.blogPost(slug), CmsTags.blog],
+        revalidate: CmsRevalidate.CONTENT,
+      });
       return {
         slug: detail.slug,
         title: detail.title,
@@ -186,7 +191,10 @@ export async function getBlogSlugs(): Promise<string[]> {
     const slugs: string[] = [];
     const pageSize = 24;
     for (let page = 1; page <= 20; page += 1) {
-      const result = await apiGet<ApiBlogPage>(`/public/blog${qs({ page, pageSize })}`);
+      const result = await apiGet<ApiBlogPage>(`/public/blog${qs({ page, pageSize })}`, {
+        tags: [CmsTags.blog],
+        revalidate: CmsRevalidate.CONTENT,
+      });
       slugs.push(...result.items.map((item) => item.slug));
       if (page >= result.totalPages) break;
     }
@@ -200,7 +208,10 @@ export async function getBlogCategories(): Promise<BlogCategoryWithCount[]> {
   if (isApiSource()) {
     const result = await apiGet<{
       items: { slug: string; name: string; description: string | null; postCount: number }[];
-    }>('/public/blog/categories');
+    }>('/public/blog/categories', {
+      tags: [CmsTags.blogCategories],
+      revalidate: CmsRevalidate.STABLE,
+    });
     return result.items
       .map((category) => ({
         slug: category.slug,
@@ -244,8 +255,14 @@ export async function getRelatedBlogPosts(slug: string, limit = 3): Promise<Blog
   if (isApiSource()) {
     // 同分类优先（数量不足由最新文章补齐）；拉取两页摘要后本地归并
     const [sameCategoryResult, latestResult] = await Promise.all([
-      apiGet<ApiBlogPage>(`/public/blog${qs({ pageSize: 24, category: current.category })}`),
-      apiGet<ApiBlogPage>(`/public/blog${qs({ pageSize: 24 })}`),
+      apiGet<ApiBlogPage>(`/public/blog${qs({ pageSize: 24, category: current.category })}`, {
+        tags: [CmsTags.blog],
+        revalidate: CmsRevalidate.CONTENT,
+      }),
+      apiGet<ApiBlogPage>(`/public/blog${qs({ pageSize: 24 })}`, {
+        tags: [CmsTags.blog],
+        revalidate: CmsRevalidate.CONTENT,
+      }),
     ]);
     const sameCategory = sameCategoryResult.items.filter((item) => item.slug !== slug);
     const rest = latestResult.items.filter(

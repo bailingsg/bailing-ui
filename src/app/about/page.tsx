@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { buildMetadata } from '@/lib/seo';
 import { siteConfig } from '@/config/site';
-import { getSiteSections } from '@/lib/site';
+import { getCmsPageSeo, getSiteSections } from '@/lib/site';
 import { SiteSectionBlock } from '@/components/cms/site-section-block';
 import {
   getAboutImagesByCategory,
@@ -39,20 +39,25 @@ import {
 const META_DESCRIPTION =
   'Bailing Wooden is a wood panel manufacturer and B2B export supplier based in Shouguang, Shandong, China — producing MDF, plywood, particle board and decorative panels for furniture, interior and construction applications.';
 
-export const metadata: Metadata = buildMetadata({
-  title: 'About Bailing Wooden | Wood Manufacturer',
-  absoluteTitle: true,
-  description: META_DESCRIPTION,
-  path: '/about',
-  keywords: [
-    'wood panel manufacturer',
-    'MDF manufacturer China',
-    'plywood supplier',
-    'particle board manufacturer',
-    'decorative panel supplier',
-    'B2B wood export',
-  ],
-});
+export async function generateMetadata(): Promise<Metadata> {
+  // CMS 的 about.hero 变更后，本页 title / description 立即跟随（任务书第十七节）
+  const seo = await getCmsPageSeo('ABOUT', 'about.hero');
+  return buildMetadata({
+    title: seo.title ?? 'About Bailing Wooden | Wood Manufacturer',
+    absoluteTitle: true,
+    description: seo.description ?? META_DESCRIPTION,
+    path: '/about',
+    keywords: [
+      'wood panel manufacturer',
+      'MDF manufacturer China',
+      'plywood supplier',
+      'particle board manufacturer',
+      'decorative panel supplier',
+      'B2B wood export',
+    ],
+    ...(seo.ogImage ? { ogImage: seo.ogImage, ogImageAlt: seo.ogImageAlt } : {}),
+  });
+}
 
 /** 经营理念（通用表述，不含任何业绩数据） */
 const philosophy: { title: string; description: string }[] = [

@@ -8,6 +8,7 @@ import { CtaBand } from '@/components/layout/cta-band';
 import { ProductCard } from '@/components/common/product-card';
 import { ProductGallery } from '@/components/products/product-gallery';
 import { ProductSchema } from '@/components/products/product-schema';
+import { BreadcrumbSchema } from '@/components/seo/breadcrumb-schema';
 import { DemoDataNotice } from '@/components/products/demo-data-notice';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -41,17 +42,26 @@ export async function generateStaticParams() {
 }
 
 /**
- * 仅允许 generateStaticParams 中列出的 slug 生成页面。
+ * 允许按需生成未预渲染的 slug（`dynamicParams = true`）。
  *
- * 原因：`dynamicParams = true` 时，Next.js 会按需生成并缓存页面，
- * 而 notFound() 的缓存结果会带上 200 状态码（SEO 上等同"软 404"）。
- * 产品目录是有限集合，关闭按需生成可获得**真正的 404**，
- * 同时保留静态预渲染带来的性能与收录优势。
+ * Phase 4.8 修正：此前设为 `false` 会导致**缓存失效后整页 404**。
+ * 机制：`dynamicParams = false` 会把该路由标记为 `fallback: NOT_FOUND`；
+ * 一旦缓存条目被 `revalidateTag` / `revalidatePath` / 过期时间失效，
+ * 路由模块拿不到 previousCacheEntry，fallbackMode 仍为 NOT_FOUND，
+ * 于是抛出 Next 内部 `NoFallbackError` → 整个详情页返回 404，
+ * 并且这个 404 会被写进 route-cache 长期生效。
+ * 结果就是「CMS 一改产品，前台所有产品详情页集体 404」——与
+ * 「发布即刷新」的核心目标完全相反。
  *
- * 代价：CMS 新增产品后需触发一次重新构建（部署钩子 / ISR webhook），
- * 这是静态目录站点的常规做法。
+ * 改为 `true` 后：
+ *   · 预渲染仍由 generateStaticParams 完成（首屏性能不变）；
+ *   · 缓存失效时按需重新生成，内容即时更新；
+ *   · 未发布（Draft / Archived）/ 已删除 / 不存在的 slug 依旧由
+ *     `notFound()` 返回**真正的 HTTP 404**——Next 15 会把渲染期
+ *     `metadata.statusCode` 存入 route-cache，读取时用
+ *     `res.statusCode = cachedData.status` 原样回放，不再是旧版本的「软 404」。
  */
-export const dynamicParams = false;
+export const dynamicParams = true;
 
 export async function generateMetadata({ params }: ProductDetailPageProps): Promise<Metadata> {
   const { slug } = await params;
@@ -333,6 +343,13 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
 
       {/* 结构化数据 */}
       <ProductSchema product={product} />
+      <BreadcrumbSchema
+        items={[
+          { name: 'Home', path: '/' },
+          { name: 'Products', path: '/products' },
+          { name: product.name, path: `/products/${product.slug}` },
+        ]}
+      />
     </>
   );
 }

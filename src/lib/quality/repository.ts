@@ -1,4 +1,5 @@
 import { apiGet, isApiSource } from '@/lib/cms-api';
+import { CmsRevalidate, CmsTags } from '@/lib/cms-tags';
 import type { QualityRecord } from './types';
 
 /**
@@ -16,7 +17,10 @@ import type { QualityRecord } from './types';
 export async function getQualityRecords(): Promise<QualityRecord[]> {
   if (!isApiSource()) return [];
 
-  const result = await apiGet<{ items: QualityRecord[]; total: number }>('/public/quality');
+  const result = await apiGet<{ items: QualityRecord[]; total: number }>('/public/quality', {
+    tags: [CmsTags.quality],
+    revalidate: CmsRevalidate.STABLE,
+  });
   return [...result.items].sort((a, b) => {
     const diff = Date.parse(b.publishedAt ?? '') - Date.parse(a.publishedAt ?? '');
     if (diff !== 0) return diff;
