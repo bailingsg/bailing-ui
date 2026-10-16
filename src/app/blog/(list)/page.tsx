@@ -10,7 +10,7 @@ import { BlogCategoryFilter } from '@/components/blog/blog-category-filter';
 import { WebPageSchema } from '@/components/seo/web-page-schema';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { buildMetadata } from '@/lib/seo';
+import { resolveSeoMetadata } from '@/lib/seo/resolver';
 import {
   BLOG_PAGE_SIZE,
   getBlogCategories,
@@ -34,20 +34,22 @@ import {
 const META_DESCRIPTION =
   'Wood industry insights from Bailing Wooden — buying guides, material comparisons and manufacturing know-how for B2B buyers of MDF, plywood and wood-based panels.';
 
-export const metadata: Metadata = buildMetadata({
-  title: 'Wood Industry Insights | Bailing Wooden',
-  absoluteTitle: true,
-  description: META_DESCRIPTION,
-  path: '/blog',
-  keywords: [
-    'wood industry insights',
-    'MDF buying guide',
-    'plywood vs MDF',
-    'wood panel quality control',
-    'wood material guide',
-    'panel sourcing guide',
-  ],
-});
+export async function generateMetadata(): Promise<Metadata> {
+  return resolveSeoMetadata({
+    title: 'Wood Industry Insights | Bailing Wooden',
+    description: META_DESCRIPTION,
+    path: '/blog',
+    titleTemplateKey: 'blog',
+    keywords: [
+      'wood industry insights',
+      'MDF buying guide',
+      'plywood vs MDF',
+      'wood panel quality control',
+      'wood material guide',
+      'panel sourcing guide',
+    ],
+  });
+}
 
 interface BlogPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;

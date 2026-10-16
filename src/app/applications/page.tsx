@@ -9,7 +9,7 @@ import { ProductCard } from '@/components/common/product-card';
 import { WebPageSchema } from '@/components/seo/web-page-schema';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { buildMetadata } from '@/lib/seo';
+import { resolveSeoMetadata } from '@/lib/seo/resolver';
 import { getApplications, hasAllApplicationImages, type Application } from '@/lib/applications';
 import { getProductBySlug, type ProductListItem } from '@/lib/products';
 
@@ -31,20 +31,21 @@ import { getProductBySlug, type ProductListItem } from '@/lib/products';
 const META_DESCRIPTION =
   'Wood panel applications explained — furniture manufacturing, interior decoration, commercial fit-outs, door and cabinet production, packaging and custom solutions.';
 
-export const metadata: Metadata = buildMetadata({
-  title: 'Wood Applications | Furniture & Interior Solutions',
-  absoluteTitle: true,
-  description: META_DESCRIPTION,
-  path: '/applications',
-  keywords: [
-    'wood panel applications',
-    'MDF furniture manufacturing',
-    'plywood interior decoration',
-    'panel commercial fit-out',
-    'door skin production',
-    'wooden packaging crating',
-  ],
-});
+export async function generateMetadata(): Promise<Metadata> {
+  return resolveSeoMetadata({
+    title: 'Wood Applications | Furniture & Interior Solutions',
+    description: META_DESCRIPTION,
+    path: '/applications',
+    keywords: [
+      'wood panel applications',
+      'MDF furniture manufacturing',
+      'plywood interior decoration',
+      'panel commercial fit-out',
+      'door skin production',
+      'wooden packaging crating',
+    ],
+  });
+}
 
 /** 汇总所有应用关联的产品 slug（去重） */
 function collectProductSlugs(items: Application[]): string[] {

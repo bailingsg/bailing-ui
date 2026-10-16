@@ -59,6 +59,9 @@ export const CmsTags = {
   site: 'site',
   navigation: 'navigation',
   contacts: 'contacts',
+
+  /* Phase 5.0：SEO 元数据 / 设置 / 重定向（影响全站 metadata） */
+  seo: 'seo',
 } as const;
 
 /** 所有 tag 的联合类型（用于后端契约校验时的自检） */
@@ -73,4 +76,5 @@ export const ALL_STATIC_TAGS = [
   CmsTags.site,
   CmsTags.navigation,
   CmsTags.contacts,
+  CmsTags.seo,
 ] as const;

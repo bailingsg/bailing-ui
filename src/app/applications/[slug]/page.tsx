@@ -11,7 +11,7 @@ import { WebPageSchema } from '@/components/seo/web-page-schema';
 import { BreadcrumbSchema } from '@/components/seo/breadcrumb-schema';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { buildMetadata } from '@/lib/seo';
+import { resolveSeoMetadata } from '@/lib/seo/resolver';
 import { getApplicationBySlug, getApplicationSlugs } from '@/lib/applications';
 import { getProductBySlug, type ProductListItem } from '@/lib/products';
 
@@ -67,7 +67,7 @@ export async function generateMetadata({
     application.overview ||
     application.title;
 
-  return buildMetadata({
+  return resolveSeoMetadata({
     title,
     description,
     path: `/applications/${application.slug}`,

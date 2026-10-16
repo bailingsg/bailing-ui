@@ -10,7 +10,7 @@ import { WebPageSchema } from '@/components/seo/web-page-schema';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { buildMetadata } from '@/lib/seo';
+import { resolveSeoMetadata } from '@/lib/seo/resolver';
 import { formatDate } from '@/lib/format';
 import { getImages } from '@/lib/factory';
 import { getQualityCertificates, type QualityRecord } from '@/lib/quality';
@@ -24,12 +24,14 @@ import { getQualityCertificates, type QualityRecord } from '@/lib/quality';
  * 内容原则（零虚构）：不出现任何证书名称、证书编号（ISO / FSC / CE 等）、
  * 检测数据或第三方机构名称；未确认内容一律显示为"待补充 / 后续更新"。
  */
-export const metadata: Metadata = buildMetadata({
-  title: 'Quality Control',
-  description:
-    'Quality control at Bailing Wooden — incoming material inspection, in-process checks, final inspection and packaging protection for wooden products.',
-  path: '/quality',
-});
+export async function generateMetadata(): Promise<Metadata> {
+  return resolveSeoMetadata({
+    title: 'Quality Control',
+    description:
+      'Quality control at Bailing Wooden — incoming material inspection, in-process checks, final inspection and packaging protection for wooden products.',
+    path: '/quality',
+  });
+}
 
 /** 质量理念（管理原则，非数据声明） */
 const qualityPhilosophy = [

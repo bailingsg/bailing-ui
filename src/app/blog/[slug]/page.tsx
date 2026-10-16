@@ -13,7 +13,7 @@ import { ArticleSchema } from '@/components/blog/article-schema';
 import { BreadcrumbSchema } from '@/components/seo/breadcrumb-schema';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { buildMetadata } from '@/lib/seo';
+import { resolveSeoMetadata } from '@/lib/seo/resolver';
 import { formatDate, toDateTimeAttribute } from '@/lib/format';
 import {
   getBlogCategories,
@@ -61,10 +61,11 @@ export async function generateMetadata({ params }: BlogDetailPageProps): Promise
     };
   }
 
-  return buildMetadata({
+  return resolveSeoMetadata({
     title: post.seo.title,
     description: post.seo.description,
     path: `/blog/${post.slug}`,
+    titleTemplateKey: 'blog',
     keywords: post.tags,
     ogType: 'article',
     ogImage: post.coverImage ?? undefined,

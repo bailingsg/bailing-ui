@@ -8,7 +8,7 @@ import { ProductFilter } from '@/components/products/product-filter';
 import { ProductPagination } from '@/components/products/product-pagination';
 import { DemoDataNotice } from '@/components/products/demo-data-notice';
 import { Badge } from '@/components/ui/badge';
-import { buildMetadata } from '@/lib/seo';
+import { resolveSeoMetadata } from '@/lib/seo/resolver';
 import { getCategories, getProducts, isDemoSource, type ProductListItem } from '@/lib/products';
 
 /**
@@ -20,12 +20,15 @@ import { getCategories, getProducts, isDemoSource, type ProductListItem } from '
  * 注：筛选通过查询参数（?category= / ?page=）实现，canonical 始终指向
  * /products，避免筛选组合产生重复内容。
  */
-export const metadata: Metadata = buildMetadata({
-  title: 'Products',
-  description:
-    'Explore the wooden product range from Bailing Wooden — panels, components, packaging and custom OEM products for B2B buyers worldwide.',
-  path: '/products',
-});
+export async function generateMetadata(): Promise<Metadata> {
+  return resolveSeoMetadata({
+    title: 'Products',
+    description:
+      'Explore the wooden product range from Bailing Wooden — panels, components, packaging and custom OEM products for B2B buyers worldwide.',
+    path: '/products',
+    titleTemplateKey: 'product',
+  });
+}
 
 const PAGE_SIZE = 12;
 

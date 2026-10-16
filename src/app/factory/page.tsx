@@ -9,7 +9,7 @@ import { ProcessFlow } from '@/components/common/process-flow';
 import { WebPageSchema } from '@/components/seo/web-page-schema';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { buildMetadata } from '@/lib/seo';
+import { resolveSeoMetadata } from '@/lib/seo/resolver';
 import { getFactoryOverview, getImages } from '@/lib/factory';
 
 /**
@@ -27,7 +27,7 @@ import { getFactoryOverview, getImages } from '@/lib/factory';
  */
 export async function generateMetadata(): Promise<Metadata> {
   const overview = await getFactoryOverview();
-  return buildMetadata({
+  return resolveSeoMetadata({
     title: overview?.title ?? 'Factory',
     description:
       overview?.summary ?? 'Manufacturing capability and production information of Bailing Wooden.',

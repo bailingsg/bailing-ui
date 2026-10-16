@@ -1,44 +1,58 @@
 import type { MetadataRoute } from 'next';
 import { siteConfig, siteUrl } from '@/config/site';
+import { getSeoSettings } from '@/lib/seo/resolver';
+import { isApiSource } from '@/lib/cms-api';
 
 /**
- * robots.txt —— 与站点收录开关联动（Phase 4.8 调整）
+ * robots.txt —— Phase 5.0 起规则由后端 Robots Generator 统一生成（任务书二十三节）
  *
- * 规则：
- *   · 允许收录时（生产默认）：`Allow: /`，仅屏蔽**内部 / 非内容**路径，
- *     绝不因为保护内部页面而误封整个站点。
- *   · 禁止收录时（开发环境，或显式 NEXT_PUBLIC_ALLOW_INDEXING=false）：
- *     `Disallow: /`，避免半成品被搜索引擎抓取。
+ * 规则来源：
+ *   1. 后端 `GET /public/seo/robots`（Admin 未开放 robots 编辑，规则由后端
+ *      固定模板生成：Allow: /；Disallow: /admin、/api、/search；Sitemap 指向
+ *      **Global SEO Settings 的 canonicalDomain**——绝不硬编码开发环境域名）；
+ *   2. 后端不可用 / demo 模式 → 本地同规则兜底（siteUrl 兜底域名）。
  *
- * 说明：后台管理系统（bailing-admin）是**独立应用**（另一个域名 / 端口），
- * 它的 robots 由其自身负责；此处不会也不需要屏蔽 /login、/dashboard 等
- * 后台路径——这些路径在本站根本不存在。
+ * 与站点收录开关联动（siteConfig.allowIndexing，环境变量控制）：
+ *   · 允许收录时输出上述规则；
+ *   · 禁止收录时 `Disallow: /`，避免半成品被搜索引擎抓取。
  *
- * 始终输出 sitemap 地址（无论是否允许收录）。
+ * 说明：后台管理系统（bailing-admin）是独立应用（另一域名 / 端口），
+ * 其 robots 由自身负责；此处屏蔽的 /admin 是未来若同域部署时的防护。
  */
 
-/** 本站内部 / 非内容路径（不应进入搜索结果） */
-const DISALLOW_PATHS = [
-  '/api/', // 内部接口（含 /api/revalidate）
-  '/design-system', // 设计系统示例页，仅内部参考
-];
+export default async function robots(): Promise<MetadataRoute.Robots> {
+  // Sitemap 域名：优先 Global SEO Settings 的 canonicalDomain，其次站点 URL
+  let sitemapBase = siteUrl;
+  if (isApiSource()) {
+    try {
+      const settings = await getSeoSettings();
+      if (settings.canonicalDomain) {
+        sitemapBase = settings.canonicalDomain.replace(/\/+$/, '');
+      }
+    } catch {
+      // 忽略：使用 siteUrl 兜底
+    }
+  }
 
-export default function robots(): MetadataRoute.Robots {
+  const sitemapUrl = `${sitemapBase}/sitemap.xml`;
+
+  // 整站禁止收录（开发环境或显式 NEXT_PUBLIC_ALLOW_INDEXING=false）
   if (!siteConfig.allowIndexing) {
     return {
       rules: { userAgent: '*', disallow: '/' },
-      sitemap: `${siteUrl}/sitemap.xml`,
-      host: siteUrl,
+      sitemap: sitemapUrl,
+      host: sitemapBase,
     };
   }
 
+  // 正常收录：仅屏蔽内部 / 非内容路径（绝不误封整个站点）
   return {
     rules: {
       userAgent: '*',
       allow: '/',
-      disallow: DISALLOW_PATHS,
+      disallow: ['/admin', '/api', '/search', '/design-system'],
     },
-    sitemap: `${siteUrl}/sitemap.xml`,
-    host: siteUrl,
+    sitemap: sitemapUrl,
+    host: sitemapBase,
   };
 }

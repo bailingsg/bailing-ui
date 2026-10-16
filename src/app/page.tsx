@@ -9,7 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { OptimizedImage } from '@/components/common/optimized-image';
 import { SiteSectionContent, SiteCtaLink } from '@/components/cms/site-section-block';
-import { buildMetadata } from '@/lib/seo';
+import { WebSiteSchema } from '@/components/seo/website-schema';
+import { resolveSeoMetadata } from '@/lib/seo/resolver';
 import { primaryCta, siteConfig } from '@/config/site';
 import { getCmsPageSeo, getSiteSections } from '@/lib/site';
 import { getCategories, isDemoSource } from '@/lib/products';
@@ -20,9 +21,8 @@ import { getCategories, isDemoSource } from '@/lib/products';
  */
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getCmsPageSeo('HOME', 'home.hero');
-  return buildMetadata({
+  return resolveSeoMetadata({
     title: seo.title ?? 'Bailing Wooden | Wooden Products Manufacturer & B2B Export Supplier',
-    absoluteTitle: true,
     description: seo.description ?? siteConfig.description,
     path: '/',
     ...(seo.ogImage ? { ogImage: seo.ogImage, ogImageAlt: seo.ogImageAlt } : {}),
@@ -103,6 +103,8 @@ export default async function HomePage() {
 
   return (
     <>
+      {/* 首页 WebSite 结构化数据（Organization 由根布局输出） */}
+      <WebSiteSchema />
       {/* Hero */}
       <section className="border-b border-border bg-surface">
         <Container className="py-16 sm:py-20 lg:py-28">

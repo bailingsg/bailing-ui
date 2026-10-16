@@ -1,54 +1,72 @@
-import { certificates, contactInfo, siteConfig, siteUrl, socialLinks } from '@/config/site';
+import { siteConfig, siteUrl } from '@/config/site';
+import type { SeoSettings } from '@/lib/seo/resolver';
 
 /**
  * OrganizationSchema —— Schema.org Organization 结构化数据（JSON-LD）
  *
- * 仅输出已确认的信息；联系方式、地址、资质等未确认字段**不写入**，
- * 避免向搜索引擎提交虚假企业信息（后续阶段由业务方确认后补充）。
+ * Phase 5.0：公司信息改由 **Global SEO Settings**（后台 SEO → Global Settings）
+ * 驱动；未配置的字段一律不输出——严禁虚构地址 / 电话 / 资质（任务书二十四节、
+ * 四十六节「Fake organization data」红线）。
+ *
+ * 稳定 `@id`（#organization）供页面级 WebPage / FAQPage 等引用，避免重复声明实体。
  */
-export function OrganizationSchema() {
+export interface OrganizationSchemaProps {
+  /** Global SEO Settings（未传时退化为 config/site 内置默认） */
+  settings?: SeoSettings | null;
+}
+
+export function OrganizationSchema({ settings }: OrganizationSchemaProps) {
+  const companyName = settings?.companyName || siteConfig.name;
+  const website = settings?.companyWebsite || siteUrl;
+  const logo = settings?.companyLogo
+    ? settings.companyLogo.startsWith('http')
+      ? settings.companyLogo
+      : `${siteUrl}${settings.companyLogo}`
+    : `${siteUrl}${siteConfig.ogImage}`;
+
   const organization: Record<string, unknown> = {
     '@context': 'https://schema.org',
     '@type': 'Organization',
     // 稳定 @id：供页面级 WebPage / about 引用，避免重复声明实体
     '@id': `${siteUrl}/#organization`,
-    name: siteConfig.name,
+    name: companyName,
     alternateName: siteConfig.nameZh,
-    url: siteUrl,
-    logo: `${siteUrl}${siteConfig.ogImage}`,
-    description: siteConfig.description,
+    url: website,
+    logo,
+    description: settings?.siteDescription || siteConfig.description,
   };
 
-  // 联系方式仅在配置后输出（当前为空，不生成）
-  if (contactInfo.email || contactInfo.phone) {
+  // 联系方式仅在配置后输出（未确认不生成，杜绝虚假信息）
+  if (settings?.companyEmail || settings?.companyPhone) {
     organization.contactPoint = {
       '@type': 'ContactPoint',
       contactType: 'sales',
-      ...(contactInfo.email ? { email: contactInfo.email } : {}),
-      ...(contactInfo.phone ? { telephone: contactInfo.phone } : {}),
+      ...(settings.companyEmail ? { email: settings.companyEmail } : {}),
+      ...(settings.companyPhone ? { telephone: settings.companyPhone } : {}),
       availableLanguage: ['en', 'zh'],
     };
   }
 
-  if (contactInfo.address) {
+  if (settings?.companyAddress || settings?.companyCountry) {
     organization.address = {
       '@type': 'PostalAddress',
-      streetAddress: contactInfo.address,
+      ...(settings.companyAddress ? { streetAddress: settings.companyAddress } : {}),
+      ...(settings.companyCountry ? { addressCountry: settings.companyCountry } : {}),
     };
   }
 
-  if (socialLinks.length > 0) {
-    organization.sameAs = socialLinks.map((link) => link.href);
-  }
-
-  if (certificates.length > 0) {
-    organization.hasCredential = certificates;
+  // Social 链接（Global SEO Settings；未配置不输出）
+  const sameAs = [settings?.linkedin, settings?.facebook, settings?.instagram, settings?.youtube].filter(
+    (url): url is string => Boolean(url),
+  );
+  if (sameAs.length > 0) {
+    organization.sameAs = sameAs;
   }
 
   return (
     <script
       type="application/ld+json"
-      // 数据来自本地配置（非用户输入），并对 < 做转义以防注入
+      // 数据来自 CMS 确认过的配置（非用户自由输入），并对 < 做转义以防注入
       dangerouslySetInnerHTML={{
         __html: JSON.stringify(organization).replace(/</g, '\\u003c'),
       }}

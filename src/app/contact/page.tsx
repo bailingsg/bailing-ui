@@ -5,18 +5,19 @@ import { ContentPlaceholder } from '@/components/layout/content-placeholder';
 import { CtaBand } from '@/components/layout/cta-band';
 import { RfqForm } from '@/components/rfq/rfq-form';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { buildMetadata } from '@/lib/seo';
+import { resolveSeoMetadata } from '@/lib/seo/resolver';
 import { toWhatsAppUrl } from '@/lib/format';
 import { getProductBySlug } from '@/lib/products';
 import { getCmsPageSeo, getSiteSections } from '@/lib/site';
 import { getPublicContacts } from '@/lib/contacts';
 import type { RfqProductRef } from '@/lib/rfq';
 import { contactInfo, siteConfig } from '@/config/site';
+import { FaqPageSchema } from '@/components/seo/faq-schema';
 
 /** 联系页 metadata：CMS 的 contact.hero 优先，缺失时回退程序默认值 */
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getCmsPageSeo('CONTACT', 'contact.hero');
-  return buildMetadata({
+  return resolveSeoMetadata({
     title: seo.title ?? 'Contact',
     description:
       seo.description ??
@@ -98,6 +99,8 @@ export default async function ContactPage({
 
   return (
     <>
+      {/* FAQPage 结构化数据（与页面可见 FAQ 一致，不编造问答） */}
+      <FaqPageSchema items={faqs} path="/contact" />
       <PageHero
         eyebrow={heroSection?.eyebrow ?? 'Contact'}
         title={heroSection?.title ?? 'Contact Us'}

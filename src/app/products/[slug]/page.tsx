@@ -12,7 +12,7 @@ import { BreadcrumbSchema } from '@/components/seo/breadcrumb-schema';
 import { DemoDataNotice } from '@/components/products/demo-data-notice';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { buildMetadata } from '@/lib/seo';
+import { resolveSeoMetadata } from '@/lib/seo/resolver';
 import {
   getProductBySlug,
   getProducts,
@@ -77,10 +77,11 @@ export async function generateMetadata({ params }: ProductDetailPageProps): Prom
 
   const primary = product.images.find((image) => image.isPrimary) ?? product.images[0];
 
-  return buildMetadata({
+  return resolveSeoMetadata({
     title: product.seo.title,
     description: product.seo.description ?? product.shortDescription ?? product.name,
     path: `/products/${product.slug}`,
+    titleTemplateKey: 'product',
     ogImage: primary?.url ?? undefined,
     ogImageAlt: primary?.altText ?? product.name,
   });
