@@ -1,5 +1,4 @@
 import * as React from 'react';
-import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import {
   Card,
@@ -13,6 +12,9 @@ import {
 import { Badge, type BadgeProps } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { OptimizedImage } from '@/components/common/optimized-image';
+import { LocaleLink } from '@/i18n/link';
+import { getI18n } from '@/i18n';
+import { defaultLocale, type Locale } from '@/i18n/config';
 
 /**
  * ProductCard —— 产品卡片
@@ -39,9 +41,11 @@ export interface ProductCardProps {
   badges?: ProductCardBadge[];
   /** 详情链接（Phase 3.3 接入 /products/[slug]） */
   href?: string;
-  /** CTA 文案 */
+  /** CTA 文案（默认按语言取「查看详情」） */
   ctaLabel?: string;
   className?: string;
+  /** 当前语言（决定链接前缀与默认文案） */
+  locale?: Locale;
 }
 
 export function ProductCard({
@@ -51,15 +55,18 @@ export function ProductCard({
   imageAlt,
   badges = [],
   href = '/products',
-  ctaLabel = 'View Details',
+  ctaLabel,
   className,
+  locale = defaultLocale,
 }: ProductCardProps) {
+  const { t } = getI18n(locale);
   return (
     <Card className={cn('group h-full hover:border-border-strong hover:shadow-md', className)}>
       <CardMedia>
         <OptimizedImage
           src={imageSrc}
           alt={imageAlt ?? name}
+          locale={locale}
           aspectRatio="4/3"
           className="transition-transform duration-[var(--duration-slow)] ease-[var(--ease-standard)] group-hover:scale-[1.02]"
         />
@@ -84,7 +91,9 @@ export function ProductCard({
 
       <CardFooter>
         <Button asChild variant="outline" size="sm">
-          <Link href={href}>{ctaLabel}</Link>
+          <LocaleLink locale={locale} href={href}>
+            {ctaLabel ?? t('common.viewDetails')}
+          </LocaleLink>
         </Button>
       </CardFooter>
     </Card>

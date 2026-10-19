@@ -1,3 +1,4 @@
+import type { Translator } from '@/i18n/translate';
 import type { RfqFieldName } from '@/lib/rfq';
 
 /**
@@ -5,6 +6,10 @@ import type { RfqFieldName } from '@/lib/rfq';
  *
  * 与后端 `CreateRfqDto` 的校验规则保持一致（长度/必填），
  * 前端做即时反馈，后端做最终裁决（前端校验不替代服务端校验）。
+ *
+ * 语言说明：**只有 label / placeholder 随界面语言变化**，
+ * `name` / `id` / `autoComplete` 恒定不变 —— 提交给后端的数据结构、
+ * 字段名称与 API 契约不因语言切换而改变。
  */
 
 /** 文本域最大长度（与后端 @MaxLength(5000) 一致） */
@@ -38,57 +43,61 @@ export function rfqFieldId(name: RfqFieldName): string {
   return `${RFQ_FIELD_PREFIX}-${name}`;
 }
 
-/** 必填字段（对应后端 DTO 的必填项） */
-export const RFQ_REQUIRED_FIELDS: RfqFieldMeta[] = [
-  {
-    name: 'name',
-    id: rfqFieldId('name'),
-    label: 'Name',
-    required: true,
-    placeholder: 'Your name',
-    autoComplete: 'name',
-  },
-  {
-    name: 'company',
-    id: rfqFieldId('company'),
-    label: 'Company',
-    required: true,
-    placeholder: 'Company name',
-    autoComplete: 'organization',
-  },
-  {
-    name: 'email',
-    id: rfqFieldId('email'),
-    label: 'Email',
-    required: true,
-    placeholder: 'you@company.com',
-    autoComplete: 'email',
-  },
-  {
-    name: 'country',
-    id: rfqFieldId('country'),
-    label: 'Country / Region',
-    required: true,
-    placeholder: 'Country or region',
-    autoComplete: 'country-name',
-  },
-];
+/** 必填字段（对应后端 DTO 的必填项；字段名固定，文案随语言） */
+export function getRfqRequiredFields(t: Translator): RfqFieldMeta[] {
+  return [
+    {
+      name: 'name',
+      id: rfqFieldId('name'),
+      label: t('rfq.name'),
+      required: true,
+      placeholder: t('rfq.namePlaceholder'),
+      autoComplete: 'name',
+    },
+    {
+      name: 'company',
+      id: rfqFieldId('company'),
+      label: t('rfq.company'),
+      required: true,
+      placeholder: t('rfq.companyPlaceholder'),
+      autoComplete: 'organization',
+    },
+    {
+      name: 'email',
+      id: rfqFieldId('email'),
+      label: t('rfq.email'),
+      required: true,
+      placeholder: t('rfq.emailPlaceholder'),
+      autoComplete: 'email',
+    },
+    {
+      name: 'country',
+      id: rfqFieldId('country'),
+      label: t('rfq.country'),
+      required: true,
+      placeholder: t('rfq.countryPlaceholder'),
+      autoComplete: 'country-name',
+    },
+  ];
+}
 
 /** 可选字段 */
-export const RFQ_OPTIONAL_FIELDS: RfqFieldMeta[] = [
-  {
-    name: 'phone',
-    id: rfqFieldId('phone'),
-    label: 'Phone',
-    required: false,
-    placeholder: 'Phone / WhatsApp',
-    autoComplete: 'tel',
-  },
-  {
-    name: 'quantity',
-    id: rfqFieldId('quantity'),
-    label: 'Estimated quantity',
-    required: false,
-    placeholder: 'e.g. 1 x 20GP',
-  },
-];
+export function getRfqOptionalFields(t: Translator): RfqFieldMeta[] {
+  return [
+    {
+      name: 'phone',
+      id: rfqFieldId('phone'),
+      label: t('rfq.phone'),
+      required: false,
+      placeholder: t('rfq.phonePlaceholder'),
+      autoComplete: 'tel',
+    },
+    {
+      name: 'quantity',
+      id: rfqFieldId('quantity'),
+      label: t('rfq.quantity'),
+      required: false,
+      placeholder: t('rfq.quantityPlaceholder'),
+    },
+  ];
+}

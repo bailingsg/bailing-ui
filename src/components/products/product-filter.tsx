@@ -1,6 +1,8 @@
-import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { LocaleLink } from '@/i18n/link';
+import { getI18n } from '@/i18n';
+import { defaultLocale, type Locale } from '@/i18n/config';
 import type { ProductCategory } from '@/lib/products';
 
 /**
@@ -16,18 +18,32 @@ export interface ProductFilterProps {
   activeSlug?: string;
   /** 保留的其他查询参数（如 page 之外的过滤条件） */
   className?: string;
+  /** 当前语言 */
+  locale?: Locale;
 }
 
-export function ProductFilter({ categories, activeSlug, className }: ProductFilterProps) {
+export function ProductFilter({
+  categories,
+  activeSlug,
+  className,
+  locale = defaultLocale,
+}: ProductFilterProps) {
   if (categories.length === 0) return null;
+
+  const { t } = getI18n(locale);
 
   return (
     <div className={cn('flex flex-wrap items-center gap-2', className)}>
       <span className="mr-1 text-caption font-semibold tracking-wider text-text-muted uppercase">
-        Category
+        {t('products.filterLabel')}
       </span>
 
-      <Link href="/products" aria-current={!activeSlug ? 'page' : undefined} className="outline-none">
+      <LocaleLink
+        locale={locale}
+        href="/products"
+        aria-current={!activeSlug ? 'page' : undefined}
+        className="outline-none"
+      >
         <Badge
           variant={!activeSlug ? 'default' : 'outline'}
           className={cn(
@@ -35,15 +51,16 @@ export function ProductFilter({ categories, activeSlug, className }: ProductFilt
             !activeSlug ? '' : 'hover:border-primary hover:text-foreground',
           )}
         >
-          All
+          {t('common.all')}
         </Badge>
-      </Link>
+      </LocaleLink>
 
       {categories.map((category) => {
         const active = category.slug === activeSlug;
         return (
-          <Link
+          <LocaleLink
             key={category.id}
+            locale={locale}
             href={`/products?category=${encodeURIComponent(category.slug)}`}
             aria-current={active ? 'page' : undefined}
             className="outline-none"
@@ -58,7 +75,7 @@ export function ProductFilter({ categories, activeSlug, className }: ProductFilt
               {category.name}
               <span className="ml-1 text-caption opacity-70">{category.productCount}</span>
             </Badge>
-          </Link>
+          </LocaleLink>
         );
       })}
     </div>

@@ -3,20 +3,32 @@
  *
  * 时区固定为 Asia/Shanghai，保证服务端渲染与不同地区访客看到同一日期，
  * 避免出现"同一天显示两个日期"的差异。
+ * 日期格式随界面语言变化（英文 `12 Oct 2026` / 中文 `2026年10月12日`）。
  */
 
-const DATE_FORMATTER = new Intl.DateTimeFormat('en-GB', {
-  year: 'numeric',
-  month: 'short',
-  day: '2-digit',
-  timeZone: 'Asia/Shanghai',
-});
+import { defaultLocale, localeMeta, type Locale } from '@/i18n/config';
 
-/** 把 ISO 日期字符串格式化为 `12 Oct 2026` 形式；非法输入返回空串 */
-export function formatDate(iso: string): string {
+const DATE_FORMATTERS = new Map<Locale, Intl.DateTimeFormat>();
+
+function dateFormatter(locale: Locale): Intl.DateTimeFormat {
+  const cached = DATE_FORMATTERS.get(locale);
+  if (cached) return cached;
+
+  const formatter = new Intl.DateTimeFormat(localeMeta[locale].dateLocale, {
+    year: 'numeric',
+    month: locale === defaultLocale ? 'short' : 'long',
+    day: '2-digit',
+    timeZone: 'Asia/Shanghai',
+  });
+  DATE_FORMATTERS.set(locale, formatter);
+  return formatter;
+}
+
+/** 把 ISO 日期字符串格式化为本地化日期；非法输入返回空串 */
+export function formatDate(iso: string, locale: Locale = defaultLocale): string {
   const timestamp = Date.parse(iso);
   if (Number.isNaN(timestamp)) return '';
-  return DATE_FORMATTER.format(new Date(timestamp));
+  return dateFormatter(locale).format(new Date(timestamp));
 }
 
 /** 把 ISO 日期字符串格式化为 `<time datetime>` 可用的值 */

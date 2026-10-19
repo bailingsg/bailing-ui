@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import {
   Card,
@@ -12,6 +11,9 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { OptimizedImage } from '@/components/common/optimized-image';
 import { formatDate, toDateTimeAttribute } from '@/lib/format';
+import { LocaleLink } from '@/i18n/link';
+import { getI18n } from '@/i18n';
+import { defaultLocale, type Locale } from '@/i18n/config';
 import type { BlogPostSummary } from '@/lib/blog';
 
 /**
@@ -27,10 +29,13 @@ export interface BlogCardProps {
   /** 分类中文名（由调用方从分类清单取，组件不写死分类映射） */
   categoryLabel?: string;
   className?: string;
+  /** 当前语言（决定日期格式、链接前缀与文案） */
+  locale?: Locale;
 }
 
-export function BlogCard({ post, categoryLabel, className }: BlogCardProps) {
-  const published = formatDate(post.publishedAt);
+export function BlogCard({ post, categoryLabel, className, locale = defaultLocale }: BlogCardProps) {
+  const { t } = getI18n(locale);
+  const published = formatDate(post.publishedAt, locale);
 
   return (
     <Card
@@ -43,6 +48,7 @@ export function BlogCard({ post, categoryLabel, className }: BlogCardProps) {
         <OptimizedImage
           src={post.coverImage}
           alt={post.coverImageAlt}
+          locale={locale}
           aspectRatio="16/9"
           sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
           className="transition-transform duration-[var(--duration-slow)] ease-[var(--ease-standard)] group-hover:scale-[1.02]"
@@ -62,12 +68,13 @@ export function BlogCard({ post, categoryLabel, className }: BlogCardProps) {
           ) : null}
         </div>
         <CardTitle className="text-balance">
-          <Link
+          <LocaleLink
+            locale={locale}
             href={`/blog/${post.slug}`}
             className="outline-none after:absolute after:inset-0 after:content-['']"
           >
             {post.title}
-          </Link>
+          </LocaleLink>
         </CardTitle>
       </CardHeader>
 
@@ -76,9 +83,11 @@ export function BlogCard({ post, categoryLabel, className }: BlogCardProps) {
       </CardContent>
 
       <CardFooter className="justify-between">
-        <span className="text-caption text-text-muted">{post.readingMinutes} min read</span>
+        <span className="text-caption text-text-muted">
+          {t('common.minRead', { minutes: post.readingMinutes })}
+        </span>
         <span className="text-caption font-semibold tracking-wider text-primary uppercase">
-          Read article →
+          {t('common.readArticle')}
         </span>
       </CardFooter>
     </Card>

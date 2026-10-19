@@ -2,6 +2,8 @@
 
 import * as React from 'react';
 import { cn } from '@/lib/utils';
+import { getI18n } from '@/i18n';
+import { defaultLocale, type Locale } from '@/i18n/config';
 
 /**
  * FileUpload —— 文件上传占位组件（Phase 3.2 仅 UI）
@@ -18,17 +20,21 @@ export interface FileUploadProps
   hint?: string;
   /** 选择文件后的回调（仅回传文件对象，不做上传） */
   onFilesSelected?: (files: File[]) => void;
+  /** 当前语言（决定默认提示文案） */
+  locale?: Locale;
 }
 
 function FileUpload({
   className,
-  label = '上传文件',
-  hint = '支持 PDF / JPG / PNG / DWG，单个文件不超过 20MB',
+  label,
+  hint,
   onFilesSelected,
   disabled,
   id,
+  locale = defaultLocale,
   ...props
 }: FileUploadProps) {
+  const { t } = getI18n(locale);
   const inputId = React.useId();
   const resolvedId = id ?? inputId;
   const [fileNames, setFileNames] = React.useState<string[]>([]);
@@ -66,9 +72,13 @@ function FileUpload({
             strokeLinejoin="round"
           />
         </svg>
-        <span className="text-small font-medium text-foreground">{label}</span>
-        <span className="text-caption text-text-muted">{hint}</span>
-        <span className="text-caption text-text-muted">（上传功能将在后续阶段接入）</span>
+        <span className="text-small font-medium text-foreground">
+          {label ?? t('rfq.attachmentLabel')}
+        </span>
+        <span className="text-caption text-text-muted">
+          {hint ?? t('rfq.attachmentHint', { max: 20 })}
+        </span>
+        <span className="text-caption text-text-muted">{t('rfq.attachmentNotEnabled')}</span>
       </label>
 
       <input
@@ -85,7 +95,7 @@ function FileUpload({
         <ul className="flex flex-col gap-1 text-caption text-text-secondary">
           {fileNames.map((name) => (
             <li key={name} className="truncate">
-              已选择：{name}
+              {t('rfq.attachmentSelected', { name })}
             </li>
           ))}
         </ul>

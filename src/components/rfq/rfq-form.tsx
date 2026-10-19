@@ -8,13 +8,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { FileUpload } from '@/components/ui/file-upload';
 import { RfqSubmitError, submitRfq, type RfqFieldName, type RfqProductRef } from '@/lib/rfq';
 import { RfqSuccess } from './rfq-success';
+import { getI18n } from '@/i18n';
+import { defaultLocale, type Locale } from '@/i18n/config';
 import {
   RFQ_ATTACHMENT_ACCEPT,
   RFQ_ATTACHMENT_MAX_MB,
   RFQ_MESSAGE_MAX_LENGTH,
   RFQ_MESSAGE_MIN_LENGTH,
-  RFQ_OPTIONAL_FIELDS,
-  RFQ_REQUIRED_FIELDS,
+  getRfqOptionalFields,
+  getRfqRequiredFields,
 } from './rfq-fields';
 
 type Status = 'idle' | 'submitting' | 'success' | 'error';
@@ -22,19 +24,27 @@ type Status = 'idle' | 'submitting' | 'success' | 'error';
 export interface RfqFormProps {
   /** 由 `/contact?product={slug}` 解析出的关联产品 */
   product?: RfqProductRef | null;
+  /** 当前语言（仅影响文案，不影响提交字段） */
+  locale?: Locale;
 }
-
-/** 成功/失败文案（按需求固定） */
-const SUCCESS_TEXT = 'Thank you for your inquiry. Our team will contact you soon.';
-const FAILURE_TEXT = 'Submission failed. Please try again.';
 
 /**
  * RfqForm —— RFQ 询盘表单（真实提交）
  *
  * 提交链路：浏览器 → POST {NEXT_PUBLIC_API_BASE_URL}/rfq → 后端校验入库。
  * 前端校验仅用于即时反馈，最终以后端 class-validator 的裁决为准。
+ *
+ * 国际化边界（重要）：
+ *   · 标签、占位符、校验提示、成功 / 失败反馈随语言变化；
+ *   · **提交字段名与结构恒定不变**（name / company / email / country /
+ *     message / phone / quantity / productId / productName），
+ *     语言切换不会改变后端契约，也不会导致重复提交。
  */
-export function RfqForm({ product = null }: RfqFormProps) {
+export function RfqForm({ product = null, locale = defaultLocale }: RfqFormProps) {
+  const { t, isDefaultLocale } = getI18n(locale);
+  const requiredFields = React.useMemo(() => getRfqRequiredFields(t), [t]);
+  const optionalFields = React.useMemo(() => getRfqOptionalFields(t), [t]);
+
   const formRef = React.useRef<HTMLFormElement>(null);
   const [status, setStatus] = React.useState<Status>('idle');
   const [fieldErrors, setFieldErrors] = React.useState<Partial<Record<RfqFieldName, string>>>({});
@@ -54,18 +64,20 @@ export function RfqForm({ product = null }: RfqFormProps) {
     const errors: Partial<Record<RfqFieldName, string>> = {};
     const read = (key: string) => String(data.get(key) ?? '').trim();
 
-    for (const field of RFQ_REQUIRED_FIELDS) {
-      if (!read(field.name)) errors[field.name] = `${field.label} is required.`;
+    for (const field of requiredFields) {
+      if (!read(field.name)) {
+        errors[field.name] = t('rfq.errorRequired', { field: field.label });
+      }
     }
 
     const email = read('email');
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      errors.email = 'Please enter a valid email address.';
+      errors.email = t('rfq.errorEmail');
     }
 
     const message = read('message');
     if (message && message.length < RFQ_MESSAGE_MIN_LENGTH) {
-      errors.message = `Please provide at least ${RFQ_MESSAGE_MIN_LENGTH} characters.`;
+      errors.message = t('rfq.errorMessageMin', { min: RFQ_MESSAGE_MIN_LENGTH });
     }
 
     return errors;
@@ -109,14 +121,31 @@ export function RfqForm({ product = null }: RfqFormProps) {
       setStatus('success');
     } catch (error) {
       if (error instanceof RfqSubmitError) {
-        setFieldErrors(error.fieldErrors);
+        // 后端错误文案为单语言（英文）。中文界面下改以本地化通用提示呈现，
+        // 避免中文表单里突然冒出英文长句（字段定位仍然准确）。
+        const serverErrors = error.fieldErrors ?? {};
+        setFieldErrors(
+          isDefaultLocale
+            ? serverErrors
+            : Object.fromEntries(
+                Object.keys(serverErrors).map((key) => {
+                  const meta = [...requiredFields, ...optionalFields].find(
+                    (field) => field.name === key,
+                  );
+                  return [
+                    key,
+                    t('rfq.errorInvalidField', { field: meta?.label ?? key }),
+                  ];
+                }),
+              ),
+        );
       }
       setStatus('error');
     }
   }
 
   if (status === 'success') {
-    return <RfqSuccess reference={reference} onReset={resetForm} />;
+    return <RfqSuccess reference={reference} onReset={resetForm} locale={locale} />;
   }
 
   const submitting = status === 'submitting';
@@ -131,7 +160,7 @@ export function RfqForm({ product = null }: RfqFormProps) {
     >
       {/* 必填字段：手机单列 → 桌面双列 */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-        {RFQ_REQUIRED_FIELDS.map((field) => (
+        {requiredFields.map((field) => (
           <div key={field.name} className="flex flex-col gap-2">
             <Label htmlFor={field.id} required={field.required}>
               {field.label}
@@ -154,7 +183,7 @@ export function RfqForm({ product = null }: RfqFormProps) {
         ))}
 
         {/* 可选字段 */}
-        {RFQ_OPTIONAL_FIELDS.map((field) => (
+        {optionalFields.map((field) => (
           <div key={field.name} className="flex flex-col gap-2">
             <Label htmlFor={field.id}>{field.label}</Label>
             <Input
@@ -176,12 +205,12 @@ export function RfqForm({ product = null }: RfqFormProps) {
 
       {/* 关联产品：来自产品详情页 Request Quote，或由客户手填 */}
       <div className="flex flex-col gap-2">
-        <Label htmlFor="rfq-productName">Product of interest</Label>
+        <Label htmlFor="rfq-productName">{t('rfq.productOfInterest')}</Label>
         {product ? (
           <>
             <div className="flex flex-wrap items-center gap-2 rounded-md border border-border-brand bg-surface-brand px-3 py-2.5">
               <span className="text-caption font-semibold tracking-wider text-primary uppercase">
-                Interested Product
+                {t('rfq.interestedProduct')}
               </span>
               <span className="text-small text-foreground">{product.name}</span>
             </div>
@@ -192,7 +221,7 @@ export function RfqForm({ product = null }: RfqFormProps) {
           <Input
             id="rfq-productName"
             name="productName"
-            placeholder="Product name or model (optional)"
+            placeholder={t('rfq.productPlaceholder')}
             aria-invalid={fieldErrors.productName ? true : undefined}
           />
         )}
@@ -201,7 +230,7 @@ export function RfqForm({ product = null }: RfqFormProps) {
       {/* 需求描述 */}
       <div className="flex flex-col gap-2">
         <Label htmlFor="rfq-message" required>
-          Requirements
+          {t('rfq.requirements')}
         </Label>
         <Textarea
           id="rfq-message"
@@ -209,11 +238,14 @@ export function RfqForm({ product = null }: RfqFormProps) {
           rows={5}
           required
           maxLength={RFQ_MESSAGE_MAX_LENGTH}
-          placeholder="Specification, size, material, surface finish, target port and any other details."
+          placeholder={t('rfq.requirementsPlaceholder')}
           aria-invalid={fieldErrors.message ? true : undefined}
         />
         <p className="text-caption text-text-muted">
-          Minimum {RFQ_MESSAGE_MIN_LENGTH} characters, up to {RFQ_MESSAGE_MAX_LENGTH}.
+          {t('rfq.requirementsHint', {
+            min: RFQ_MESSAGE_MIN_LENGTH,
+            max: RFQ_MESSAGE_MAX_LENGTH,
+          })}
         </p>
         {fieldErrors.message ? (
           <p role="alert" className="text-caption text-destructive">
@@ -224,13 +256,14 @@ export function RfqForm({ product = null }: RfqFormProps) {
 
       {/* 附件（本阶段仅选择文件，不实际上传） */}
       <div className="flex flex-col gap-2">
-        <Label htmlFor="rfq-attachment">Attachment (optional)</Label>
+        <Label htmlFor="rfq-attachment">{t('rfq.attachment')}</Label>
         <FileUpload
           id="rfq-attachment"
           name="attachment"
           accept={RFQ_ATTACHMENT_ACCEPT}
-          label="Upload drawing or specification"
-          hint={`Supported: PDF / JPG / PNG / DWG, up to ${RFQ_ATTACHMENT_MAX_MB}MB per file`}
+          locale={locale}
+          label={t('rfq.attachmentLabel')}
+          hint={t('rfq.attachmentHint', { max: RFQ_ATTACHMENT_MAX_MB })}
           onFilesSelected={(files) => {
             const file = files[0];
             if (!file) {
@@ -238,12 +271,10 @@ export function RfqForm({ product = null }: RfqFormProps) {
               return;
             }
             if (file.size > RFQ_ATTACHMENT_MAX_MB * 1024 * 1024) {
-              setAttachmentNote(`"${file.name}" exceeds ${RFQ_ATTACHMENT_MAX_MB}MB and will not be sent.`);
+              setAttachmentNote(t('rfq.attachmentTooLarge', { name: file.name, max: RFQ_ATTACHMENT_MAX_MB }));
               return;
             }
-            setAttachmentNote(
-              `"${file.name}" selected — online file upload is not enabled yet, so please also describe it in your requirements.`,
-            );
+            setAttachmentNote(t('rfq.attachmentSelectedNote', { name: file.name }));
           }}
         />
         {attachmentNote ? (
@@ -253,11 +284,9 @@ export function RfqForm({ product = null }: RfqFormProps) {
 
       {/* 提交区 */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-caption text-text-muted">
-          We only use your details to respond to this enquiry.
-        </p>
+        <p className="text-caption text-text-muted">{t('rfq.privacy')}</p>
         <Button type="submit" size="lg" loading={submitting}>
-          {submitting ? 'Submitting…' : 'Submit Request'}
+          {submitting ? t('rfq.submitting') : t('rfq.submit')}
         </Button>
       </div>
 
@@ -267,12 +296,12 @@ export function RfqForm({ product = null }: RfqFormProps) {
           role="alert"
           className="rounded-md border border-destructive/40 bg-destructive/5 px-4 py-3 text-small text-destructive"
         >
-          {FAILURE_TEXT}
+          {t('rfq.failure')}
         </p>
       ) : null}
 
       {/* 无障碍：提交成功文案（成功态由 RfqSuccess 呈现） */}
-      <span className="sr-only">{SUCCESS_TEXT}</span>
+      <span className="sr-only">{t('rfq.successTitle')}</span>
     </form>
   );
 }

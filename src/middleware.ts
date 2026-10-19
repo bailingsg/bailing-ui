@@ -1,16 +1,30 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import {
+  defaultLocale,
+  isLocale,
+  localeAliases,
+  localeCookieName,
+  localeHeaderName,
+  type Locale,
+} from '@/i18n/config';
+import { stripLocaleFromPath } from '@/i18n/paths';
 
 /**
- * 前台中间件（Phase 5.0）—— SEO 重定向执行（任务书二十八节）
+ * 前台中间件 —— 语言路由 + SEO 重定向（Phase 5.0 规则保持不变）
  *
- * 规则来源：后端 `GET /public/seo/redirects`（SEO → Redirects 管理，
- * 支持 301 / 302、启用停用、防环 / 防自指向校验见后端 SeoRedirectService）。
+ * 语言路由策略：**as-needed 前缀**
+ *   · 英文（默认）—— 无前缀，`/products` 内部重写到 `/en/products`；
+ *     既有 URL 一个都不变，历史收录与外链完全兼容。
+ *   · 中文 —— `/zh-CN/products`，真实可抓取、可分享、可 canonical。
+ *   · `/en/...` 视为非规范 URL，301 回无前缀地址（避免同页两套 URL）。
+ *   · `/zh`、`/zh_CN`、`/en-US` 等别名 301 归一到规范前缀或默认语言。
  *
- * 设计要点：
- *   · 规则带 60s 进程内缓存（middleware 每次请求都会执行，不能每次回源）；
- *   · 只处理**站内路径**（以 / 开头、非 // 开头）；外部目标直接 301/302 跳转；
- *   · 未命中任何规则 → 放行（next()），零额外开销；
- *   · API / 静态资源 / 后台路径不进入匹配（见 config.matcher）。
+ * 持久化：Cookie（NEXT_LOCALE）记录用户选择。带中文 Cookie 的访客访问
+ * 无前缀地址时 307 跳到对应中文页面；搜索引擎爬虫不带 Cookie，
+ * 因此抓到的永远是英文默认页 —— 不会被用户偏好污染收录。
+ *
+ * SEO 重定向：规则仍来自后端 `GET /public/seo/redirects`（60s 进程内缓存），
+ * 匹配的是**去掉语言前缀后**的路径，命中后按当前语言补回前缀。
  */
 
 interface RedirectRule {
@@ -19,7 +33,7 @@ interface RedirectRule {
   statusCode: number;
 }
 
-/** 进程内缓存（ middleware 实例生命周期内有效） */
+/** 进程内缓存（middleware 实例生命周期内有效） */
 let cachedRules: RedirectRule[] | null = null;
 let cachedAt = 0;
 const CACHE_TTL_MS = 60_000;
@@ -27,6 +41,9 @@ const CACHE_TTL_MS = 60_000;
 const API_BASE = (
   process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://127.0.0.1:4000/api/v1'
 ).replace(/\/+$/, '');
+
+/** 形如 `en` / `zh-CN` 的语言段（用于识别伪语言前缀） */
+const LOCALE_LIKE_SEGMENT = /^[a-z]{2}(-[A-Za-z]{2,4})?$/;
 
 async function loadRules(): Promise<RedirectRule[]> {
   const now = Date.now();
@@ -57,40 +74,110 @@ async function loadRules(): Promise<RedirectRule[]> {
   }
 }
 
-export async function middleware(request: NextRequest): Promise<NextResponse> {
-  const { pathname } = request.nextUrl;
+/** 给站内目标补语言前缀（英文无前缀；外链原样返回） */
+function withLocale(target: string, locale: Locale): string {
+  if (!target.startsWith('/') || target.startsWith('//')) return target;
+  if (locale === defaultLocale) return target;
+  return target === '/' ? `/${locale}` : `/${locale}${target}`;
+}
 
-  // 仅站内相对路径参与匹配（外链由 <a> 控制，不经 middleware）
+/** 读取语言 Cookie（非法值忽略） */
+function readLocaleCookie(request: NextRequest): Locale | null {
+  const raw = request.cookies.get(localeCookieName)?.value;
+  return raw && isLocale(raw) ? raw : null;
+}
+
+export async function middleware(request: NextRequest): Promise<NextResponse> {
+  const { pathname, search } = request.nextUrl;
+
+  // 仅站内相对路径参与处理（外链由 <a> 控制，不经 middleware）
   if (!pathname.startsWith('/') || pathname.startsWith('//')) {
     return NextResponse.next();
   }
 
+  const firstSegment = pathname.split('/')[1] ?? '';
+
+  /* ------------------------------------------------------------------ */
+  /* 1. 语言前缀归一化                                                   */
+  /* ------------------------------------------------------------------ */
+  if (firstSegment === defaultLocale) {
+    // 英文规范 URL 不带前缀
+    const rest = pathname.slice(defaultLocale.length + 1) || '/';
+    return NextResponse.redirect(new URL(`${rest}${search}`, request.url), 301);
+  }
+
+  if (firstSegment && !isLocale(firstSegment) && LOCALE_LIKE_SEGMENT.test(firstSegment)) {
+    const rest = pathname.slice(firstSegment.length + 1) || '/';
+    const alias = localeAliases[firstSegment.toLowerCase()];
+
+    if (alias && alias !== defaultLocale) {
+      // /zh/products → /zh-CN/products
+      const target = rest === '/' ? `/${alias}` : `/${alias}${rest}`;
+      return NextResponse.redirect(new URL(`${target}${search}`, request.url), 301);
+    }
+    // 不支持的语言（如 /fr/products）→ 回默认语言路径，避免伪语言 URL 被收录
+    return NextResponse.redirect(new URL(`${rest}${search}`, request.url), 301);
+  }
+
+  const pathLocale = isLocale(firstSegment) ? (firstSegment as Locale) : null;
+  const activeLocale = pathLocale ?? readLocaleCookie(request) ?? defaultLocale;
+
+  /* ------------------------------------------------------------------ */
+  /* 2. SEO 重定向（规则基于无语言前缀的路径）                            */
+  /* ------------------------------------------------------------------ */
+  const localeFreePath = pathLocale ? stripLocaleFromPath(pathname) : pathname;
   const rules = await loadRules();
-  if (rules.length === 0) return NextResponse.next();
 
-  const normalized = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
-  const matched = rules.find((rule) => {
-    const source = rule.sourcePath.length > 1 ? rule.sourcePath.replace(/\/+$/, '') : rule.sourcePath;
-    return source === normalized;
-  });
+  if (rules.length > 0) {
+    const normalized =
+      localeFreePath.length > 1 ? localeFreePath.replace(/\/+$/, '') : localeFreePath;
+    const matched = rules.find((rule) => {
+      const source =
+        rule.sourcePath.length > 1 ? rule.sourcePath.replace(/\/+$/, '') : rule.sourcePath;
+      return source === normalized;
+    });
 
-  if (!matched) return NextResponse.next();
+    if (matched) {
+      const status = matched.statusCode === 302 ? 302 : 301;
+      const target = matched.targetPath.startsWith('/')
+        ? new URL(withLocale(matched.targetPath, activeLocale), request.url)
+        : new URL(matched.targetPath);
+      return NextResponse.redirect(target, status);
+    }
+  }
 
-  const status = matched.statusCode === 302 ? 302 : 301;
-  // 站内目标保持同源跳转；外部目标允许跨域
-  const target = matched.targetPath.startsWith('/')
-    ? new URL(matched.targetPath, request.url)
-    : new URL(matched.targetPath);
+  /* ------------------------------------------------------------------ */
+  /* 3. 无前缀路径：按 Cookie 偏好跳到中文，否则内部重写到 /en            */
+  /* ------------------------------------------------------------------ */
+  // 把本次生效的语言写进请求头：404 / 错误边界拿不到路由参数，
+  // 只能靠它决定服务端渲染哪种语言（否则只能等客户端 hydrate）。
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set(localeHeaderName, activeLocale);
 
-  return NextResponse.redirect(target, status);
+  if (!pathLocale) {
+    if (
+      activeLocale !== defaultLocale &&
+      (request.method === 'GET' || request.method === 'HEAD')
+    ) {
+      // 用户此前选择过中文：回到中文版本（307 临时跳转，爬虫不带 Cookie 不受影响）
+      const target = pathname === '/' ? `/${activeLocale}` : `/${activeLocale}${pathname}`;
+      return NextResponse.redirect(new URL(`${target}${search}`, request.url), 307);
+    }
+
+    const rewriteUrl = request.nextUrl.clone();
+    rewriteUrl.pathname = pathname === '/' ? `/${defaultLocale}` : `/${defaultLocale}${pathname}`;
+    return NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } });
+  }
+
+  return NextResponse.next({ request: { headers: requestHeaders } });
 }
 
 export const config = {
   /**
    * 匹配所有页面路径，排除：
    *   · api（本站自身的路由处理器）
-   *   · _next/static（Next 内部资源）
-   *   · 常见静态文件扩展名
+   *   · _next（Next 内部资源）
+   *   · 任何带扩展名的静态文件（robots.txt / sitemap.xml / logo.webp / public 下的图片…）
    */
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|logo.webp|robots.txt|sitemap.xml).*)'],
+  matcher: ['/((?!api|_next|.*\\.[^/]+$).*)'],
 };

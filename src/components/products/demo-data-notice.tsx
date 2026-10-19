@@ -1,4 +1,6 @@
 import { Badge } from '@/components/ui/badge';
+import { getI18n } from '@/i18n';
+import { defaultLocale, type Locale } from '@/i18n/config';
 
 /**
  * DemoDataNotice —— Demo / Placeholder 数据提示条
@@ -6,7 +8,14 @@ import { Badge } from '@/components/ui/badge';
  * 当产品数据源为内置 Demo 数据时展示，明确告知访客与验收方：
  * 当前内容为占位数据，产品信息以 CMS 上线后的正式内容为准。
  */
-export function DemoDataNotice({ className }: { className?: string }) {
+export function DemoDataNotice({
+  className,
+  locale = defaultLocale,
+}: {
+  className?: string;
+  locale?: Locale;
+}) {
+  const { t } = getI18n(locale);
   return (
     <div
       role="note"
@@ -18,12 +27,9 @@ export function DemoDataNotice({ className }: { className?: string }) {
         .join(' ')}
     >
       <Badge variant="material" className="w-fit">
-        Demo / Placeholder
+        {t('products.demoBadge')}
       </Badge>
-      <p className="text-caption text-text-secondary">
-        Product records below are placeholder data used to validate the page template. They will be
-        replaced by CMS-managed content.
-      </p>
+      <p className="text-caption text-text-secondary">{t('products.demoText')}</p>
     </div>
   );
 }

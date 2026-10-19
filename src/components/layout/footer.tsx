@@ -1,8 +1,10 @@
-import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Container } from '@/components/layout/container';
 import { Logo } from '@/components/common/logo';
 import { certificates, contactInfo, siteConfig, socialLinks } from '@/config/site';
+import { LocaleLink } from '@/i18n/link';
+import { getI18n, localizeNavLabel } from '@/i18n';
+import type { Locale } from '@/i18n/config';
 import type { PublicNavItem } from '@/lib/site';
 
 /**
@@ -14,21 +16,26 @@ import type { PublicNavItem } from '@/lib/site';
  * 由服务端获取后经 props 传入；链接在 CMS 写入时已做安全校验
  * （仅站内相对路径 / https / mailto / tel），新窗口项自动补 rel。
  *
- * 联系信息与证书在业务方确认前显示"待补充"，不伪造任何企业数据。
+ * 联系信息与证书在业务方确认前显示"待确认"，不伪造任何企业数据。
  */
-function ContactRow({ label, value }: { label: string; value: string }) {
+function ContactRow({ label, value, placeholder }: { label: string; value: string; placeholder: string }) {
   return (
     <div className="flex flex-col gap-0.5">
       <dt className="text-caption tracking-wider text-neutral-400 uppercase">{label}</dt>
       <dd className={cn('text-small', value ? 'text-surface-inverse-foreground' : 'text-neutral-500')}>
-        {value || siteConfig.placeholderText}
+        {value || placeholder}
       </dd>
     </div>
   );
 }
 
-export function Footer({ items }: { items: PublicNavItem[] }) {
+export function Footer({ items, locale }: { items: PublicNavItem[]; locale: Locale }) {
   const year = new Date().getFullYear();
+  const { t, isDefaultLocale } = getI18n(locale);
+
+  const description = isDefaultLocale ? siteConfig.description : siteConfig.descriptionZh;
+  const tagline = isDefaultLocale ? siteConfig.tagline : siteConfig.taglineZh;
+  const placeholder = isDefaultLocale ? siteConfig.placeholderText : siteConfig.placeholderTextZh;
 
   return (
     <footer className="bg-surface-inverse text-surface-inverse-foreground">
@@ -36,57 +43,72 @@ export function Footer({ items }: { items: PublicNavItem[] }) {
         <div className="grid grid-cols-1 gap-10 py-section-sm sm:grid-cols-2 lg:grid-cols-12 lg:gap-8">
           {/* 品牌栏 */}
           <div className="flex flex-col gap-4 sm:col-span-2 lg:col-span-4">
-            <Logo tone="inverse" withTagline />
-            <p className="max-w-sm text-small text-neutral-400">{siteConfig.description}</p>
+            <Logo locale={locale} tone="inverse" withTagline />
+            <p className="max-w-sm text-small text-neutral-400">{description}</p>
             <p className="text-caption text-neutral-500">
-              {siteConfig.tagline} · {siteConfig.taglineZh}
+              {isDefaultLocale
+                ? `${siteConfig.tagline} · ${siteConfig.taglineZh}`
+                : siteConfig.taglineZh}
             </p>
           </div>
 
           {/* 站点导航栏（CMS 驱动，双列排布保持信息密度） */}
           <nav
-            aria-label="站点导航"
+            aria-label={t('nav.footerNav')}
             className="flex flex-col gap-3 sm:col-span-2 lg:col-span-4"
           >
             <h2 className="text-small font-semibold text-surface-inverse-foreground">
-              Sitemap
-              <span className="ml-1.5 text-caption font-normal text-neutral-500">站点导航</span>
+              {isDefaultLocale ? t('nav.sitemap') : t('nav.sitemapZh')}
+              {isDefaultLocale ? (
+                <span className="ml-1.5 text-caption font-normal text-neutral-500">
+                  {t('nav.sitemapZh')}
+                </span>
+              ) : null}
             </h2>
             {items.length > 0 ? (
               <ul className="columns-1 gap-6 sm:columns-2">
                 {items.map((item) => (
                   <li key={item.id} className="break-inside-avoid">
-                    <Link
+                    <LocaleLink
+                      locale={locale}
                       href={item.url}
                       target={item.openInNewTab ? '_blank' : undefined}
                       rel={item.openInNewTab ? 'noopener noreferrer' : undefined}
                       className="text-small text-neutral-400 transition-colors duration-[var(--duration-fast)] hover:text-surface-inverse-foreground"
                     >
-                      {item.label}
-                    </Link>
+                      {localizeNavLabel(item.url, t, item.label)}
+                    </LocaleLink>
                   </li>
                 ))}
               </ul>
             ) : (
-              <span className="text-small text-neutral-500">{siteConfig.placeholderText}</span>
+              <span className="text-small text-neutral-500">{placeholder}</span>
             )}
           </nav>
 
           {/* 联系信息栏 */}
           <div className="flex flex-col gap-4 sm:col-span-2 lg:col-span-4">
             <h2 className="text-small font-semibold text-surface-inverse-foreground">
-              Contact
-              <span className="ml-1.5 text-caption font-normal text-neutral-500">联系</span>
+              {isDefaultLocale ? t('nav.contactHeading') : t('nav.contactHeadingZh')}
+              {isDefaultLocale ? (
+                <span className="ml-1.5 text-caption font-normal text-neutral-500">
+                  {t('nav.contactHeadingZh')}
+                </span>
+              ) : null}
             </h2>
             <dl className="flex flex-col gap-3">
-              <ContactRow label="Email" value={contactInfo.email} />
-              <ContactRow label="Phone" value={contactInfo.phone} />
-              <ContactRow label="Address" value={contactInfo.address} />
+              <ContactRow label={t('nav.email')} value={contactInfo.email} placeholder={placeholder} />
+              <ContactRow label={t('nav.phone')} value={contactInfo.phone} placeholder={placeholder} />
+              <ContactRow
+                label={t('nav.address')}
+                value={contactInfo.address}
+                placeholder={placeholder}
+              />
             </dl>
 
             <div className="flex flex-col gap-1.5">
               <span className="text-caption tracking-wider text-neutral-400 uppercase">
-                Certificates
+                {t('nav.certificates')}
               </span>
               {certificates.length > 0 ? (
                 <ul className="flex flex-wrap gap-2">
@@ -97,12 +119,14 @@ export function Footer({ items }: { items: PublicNavItem[] }) {
                   ))}
                 </ul>
               ) : (
-                <span className="text-small text-neutral-500">{siteConfig.placeholderText}</span>
+                <span className="text-small text-neutral-500">{placeholder}</span>
               )}
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <span className="text-caption tracking-wider text-neutral-400 uppercase">Social</span>
+              <span className="text-caption tracking-wider text-neutral-400 uppercase">
+                {t('nav.social')}
+              </span>
               {socialLinks.length > 0 ? (
                 <ul className="flex flex-wrap gap-3">
                   {socialLinks.map((item) => (
@@ -117,7 +141,7 @@ export function Footer({ items }: { items: PublicNavItem[] }) {
                   ))}
                 </ul>
               ) : (
-                <span className="text-small text-neutral-500">{siteConfig.placeholderText}</span>
+                <span className="text-small text-neutral-500">{placeholder}</span>
               )}
             </div>
           </div>
@@ -126,11 +150,9 @@ export function Footer({ items }: { items: PublicNavItem[] }) {
         {/* 版权栏 */}
         <div className="flex flex-col gap-2 border-t border-white/10 py-6 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-caption text-neutral-500">
-            © {year} {siteConfig.name} ({siteConfig.nameZh}). All rights reserved.
+            {t('nav.copyright', { year, name: siteConfig.name, nameZh: siteConfig.nameZh })}
           </p>
-          <p className="text-caption text-neutral-500">
-            B2B Export Supplier · {siteConfig.tagline}
-          </p>
+          <p className="text-caption text-neutral-500">{t('nav.exportLine', { tagline })}</p>
         </div>
       </Container>
     </footer>

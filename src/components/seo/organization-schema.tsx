@@ -1,5 +1,6 @@
 import { siteConfig, siteUrl } from '@/config/site';
 import type { SeoSettings } from '@/lib/seo/resolver';
+import { defaultLocale, type Locale } from '@/i18n/config';
 
 /**
  * OrganizationSchema —— Schema.org Organization 结构化数据（JSON-LD）
@@ -13,9 +14,14 @@ import type { SeoSettings } from '@/lib/seo/resolver';
 export interface OrganizationSchemaProps {
   /** Global SEO Settings（未传时退化为 config/site 内置默认） */
   settings?: SeoSettings | null;
+  /** 当前语言：决定 description 用中文还是英文（公司名 / 地址等事实字段不受影响） */
+  locale?: Locale;
 }
 
-export function OrganizationSchema({ settings }: OrganizationSchemaProps) {
+export function OrganizationSchema({
+  settings,
+  locale = defaultLocale,
+}: OrganizationSchemaProps) {
   const companyName = settings?.companyName || siteConfig.name;
   const website = settings?.companyWebsite || siteUrl;
   const logo = settings?.companyLogo
@@ -33,7 +39,10 @@ export function OrganizationSchema({ settings }: OrganizationSchemaProps) {
     alternateName: siteConfig.nameZh,
     url: website,
     logo,
-    description: settings?.siteDescription || siteConfig.description,
+    description:
+      locale === defaultLocale
+        ? settings?.siteDescription || siteConfig.description
+        : siteConfig.descriptionZh,
   };
 
   // 联系方式仅在配置后输出（未确认不生成，杜绝虚假信息）

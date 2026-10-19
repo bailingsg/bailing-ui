@@ -1,5 +1,7 @@
 import { siteConfig, siteUrl } from '@/config/site';
 import { absoluteUrl } from '@/lib/seo';
+import { localeMeta, defaultLocale, type Locale } from '@/i18n/config';
+import { localizedPath } from '@/i18n/paths';
 import type { BlogPost } from '@/lib/blog';
 
 /**
@@ -19,10 +21,12 @@ export interface ArticleSchemaProps {
   post: BlogPost;
   /** 分类英文名（作为 articleSection） */
   section?: string;
+  /** 页面语言（默认 en） */
+  locale?: Locale;
 }
 
-export function ArticleSchema({ post, section }: ArticleSchemaProps) {
-  const url = absoluteUrl(`/blog/${post.slug}`);
+export function ArticleSchema({ post, section, locale = defaultLocale }: ArticleSchemaProps) {
+  const url = absoluteUrl(localizedPath(`/blog/${post.slug}`, locale));
 
   const schema: Record<string, unknown> = {
     '@context': 'https://schema.org',
@@ -31,7 +35,7 @@ export function ArticleSchema({ post, section }: ArticleSchemaProps) {
     headline: post.seo.title,
     description: post.seo.description,
     url,
-    inLanguage: 'en',
+    inLanguage: localeMeta[locale].htmlLang,
     datePublished: post.publishedAt,
     dateModified: post.updatedAt ?? post.publishedAt,
     mainEntityOfPage: {

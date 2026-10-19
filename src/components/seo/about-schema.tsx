@@ -1,5 +1,6 @@
 import { siteConfig, siteUrl } from '@/config/site';
 import { absoluteUrl } from '@/lib/seo';
+import { defaultLocale, type Locale } from '@/i18n/config';
 
 /**
  * AboutSchema —— 关于我们页的组织结构化数据（JSON-LD）
@@ -19,8 +20,10 @@ import { absoluteUrl } from '@/lib/seo';
 export interface AboutSchemaProps {
   /** 页面描述（与 metadata 保持一致） */
   description: string;
-  /** 页面路径，默认 /about */
+  /** 页面路径（已带语言前缀），默认 /about */
   path?: string;
+  /** 页面语言（默认 en），决定 slogan 语言 */
+  locale?: Locale;
 }
 
 /** 公司业务范围（已由业务方确认的产品方向，不含任何编造数据） */
@@ -33,7 +36,11 @@ const KNOWS_ABOUT = [
   'Wood products export',
 ];
 
-export function AboutSchema({ description, path = '/about' }: AboutSchemaProps) {
+export function AboutSchema({
+  description,
+  path = '/about',
+  locale = defaultLocale,
+}: AboutSchemaProps) {
   const url = absoluteUrl(path);
 
   const schema: Record<string, unknown> = {
@@ -46,7 +53,7 @@ export function AboutSchema({ description, path = '/about' }: AboutSchemaProps) 
     url: siteUrl,
     logo: `${siteUrl}${siteConfig.ogImage}`,
     description,
-    slogan: siteConfig.tagline,
+    slogan: locale === defaultLocale ? siteConfig.tagline : siteConfig.taglineZh,
     knowsAbout: KNOWS_ABOUT,
     // 指回关于我们页本身，建立"页面 ↔ 实体"关系
     mainEntityOfPage: {

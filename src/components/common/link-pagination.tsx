@@ -1,6 +1,8 @@
-import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { LocaleLink } from '@/i18n/link';
+import { getI18n } from '@/i18n';
+import { defaultLocale, type Locale } from '@/i18n/config';
 
 /**
  * LinkPagination —— 通用链接式分页
@@ -17,23 +19,28 @@ export interface LinkPaginationProps {
   /** 无障碍标签（如 "Blog pagination"） */
   label?: string;
   className?: string;
+  /** 当前语言 */
+  locale?: Locale;
 }
 
 export function LinkPagination({
   page,
   totalPages,
   buildHref,
-  label = 'Pagination',
+  label,
   className,
+  locale = defaultLocale,
 }: LinkPaginationProps) {
   if (totalPages <= 1) return null;
+
+  const { t } = getI18n(locale);
 
   const hasPrev = page > 1;
   const hasNext = page < totalPages;
 
   return (
     <nav
-      aria-label={label}
+      aria-label={label ?? t('common.pagination')}
       className={cn(
         'mt-12 flex items-center justify-center gap-4 border-t border-border pt-8',
         className,
@@ -41,25 +48,25 @@ export function LinkPagination({
     >
       <Button asChild={hasPrev} variant="outline" size="sm" disabled={!hasPrev}>
         {hasPrev ? (
-          <Link href={buildHref(page - 1)} rel="prev">
-            Previous
-          </Link>
+          <LocaleLink locale={locale} href={buildHref(page - 1)} rel="prev">
+            {t('common.previous')}
+          </LocaleLink>
         ) : (
-          <span>Previous</span>
+          <span>{t('common.previous')}</span>
         )}
       </Button>
 
       <span className="text-small text-text-muted">
-        Page {page} of {totalPages}
+        {t('common.pageOf', { page, total: totalPages })}
       </span>
 
       <Button asChild={hasNext} variant="outline" size="sm" disabled={!hasNext}>
         {hasNext ? (
-          <Link href={buildHref(page + 1)} rel="next">
-            Next
-          </Link>
+          <LocaleLink locale={locale} href={buildHref(page + 1)} rel="next">
+            {t('common.next')}
+          </LocaleLink>
         ) : (
-          <span>Next</span>
+          <span>{t('common.next')}</span>
         )}
       </Button>
     </nav>

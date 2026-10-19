@@ -1,9 +1,11 @@
 import { Button } from '@/components/ui/button';
+import { getI18n } from '@/i18n';
+import { defaultLocale, type Locale } from '@/i18n/config';
 
 /**
  * RfqSuccess —— 询盘提交成功状态
  *
- * 文案按需求固定为：
+ * 文案随界面语言切换（英文 / 中文），语义与需求一致：
  *   "Thank you for your inquiry. Our team will contact you soon."
  */
 export interface RfqSuccessProps {
@@ -11,9 +13,13 @@ export interface RfqSuccessProps {
   reference?: string;
   /** 再次提交（重置表单） */
   onReset?: () => void;
+  /** 当前语言 */
+  locale?: Locale;
 }
 
-export function RfqSuccess({ reference, onReset }: RfqSuccessProps) {
+export function RfqSuccess({ reference, onReset, locale = defaultLocale }: RfqSuccessProps) {
+  const { t } = getI18n(locale);
+
   return (
     <div
       role="status"
@@ -36,19 +42,19 @@ export function RfqSuccess({ reference, onReset }: RfqSuccessProps) {
       </span>
 
       <div className="flex flex-col gap-1">
-        <h3 className="text-heading-sm">Thank you for your inquiry.</h3>
-        <p className="text-body text-text-secondary">Our team will contact you soon.</p>
+        <h3 className="text-heading-sm">{t('rfq.successTitle')}</h3>
+        <p className="text-body text-text-secondary">{t('rfq.successText')}</p>
       </div>
 
       {reference ? (
         <p className="text-caption text-text-muted">
-          Reference: <span className="font-medium text-text-secondary">{reference}</span>
+          {t('rfq.successReference', { reference })}
         </p>
       ) : null}
 
       {onReset ? (
         <Button type="button" variant="outline" onClick={onReset}>
-          Send another enquiry
+          {t('rfq.sendAnother')}
         </Button>
       ) : null}
     </div>

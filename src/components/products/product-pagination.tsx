@@ -1,5 +1,7 @@
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { LocaleLink } from '@/i18n/link';
+import { getI18n } from '@/i18n';
+import { defaultLocale, type Locale } from '@/i18n/config';
 
 /**
  * ProductPagination —— 产品列表分页
@@ -11,6 +13,8 @@ export interface ProductPaginationProps {
   page: number;
   totalPages: number;
   category?: string;
+  /** 当前语言 */
+  locale?: Locale;
 }
 
 function buildHref(page: number, category?: string): string {
@@ -21,38 +25,45 @@ function buildHref(page: number, category?: string): string {
   return `/products${search ? `?${search}` : ''}`;
 }
 
-export function ProductPagination({ page, totalPages, category }: ProductPaginationProps) {
+export function ProductPagination({
+  page,
+  totalPages,
+  category,
+  locale = defaultLocale,
+}: ProductPaginationProps) {
   if (totalPages <= 1) return null;
+
+  const { t } = getI18n(locale);
 
   const hasPrev = page > 1;
   const hasNext = page < totalPages;
 
   return (
     <nav
-      aria-label="Pagination"
+      aria-label={t('common.pagination')}
       className="mt-12 flex items-center justify-center gap-4 border-t border-border pt-8"
     >
       <Button asChild={hasPrev} variant="outline" size="sm" disabled={!hasPrev}>
         {hasPrev ? (
-          <Link href={buildHref(page - 1, category)} rel="prev">
-            Previous
-          </Link>
+          <LocaleLink locale={locale} href={buildHref(page - 1, category)} rel="prev">
+            {t('common.previous')}
+          </LocaleLink>
         ) : (
-          <span>Previous</span>
+          <span>{t('common.previous')}</span>
         )}
       </Button>
 
       <span className="text-small text-text-muted">
-        Page {page} of {totalPages}
+        {t('common.pageOf', { page, total: totalPages })}
       </span>
 
       <Button asChild={hasNext} variant="outline" size="sm" disabled={!hasNext}>
         {hasNext ? (
-          <Link href={buildHref(page + 1, category)} rel="next">
-            Next
-          </Link>
+          <LocaleLink locale={locale} href={buildHref(page + 1, category)} rel="next">
+            {t('common.next')}
+          </LocaleLink>
         ) : (
-          <span>Next</span>
+          <span>{t('common.next')}</span>
         )}
       </Button>
     </nav>

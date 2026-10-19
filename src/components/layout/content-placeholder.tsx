@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
+import { getI18n } from '@/i18n';
+import { defaultLocale, type Locale } from '@/i18n/config';
 
 /**
  * ContentPlaceholder —— 内容待补充占位块
@@ -17,6 +19,8 @@ export interface ContentPlaceholderProps {
   /** 自定义最小高度类（默认 min-h-40） */
   minHeightClass?: string;
   className?: string;
+  /** 当前语言（决定默认说明文案） */
+  locale?: Locale;
 }
 
 function DefaultIcon() {
@@ -39,11 +43,13 @@ function DefaultIcon() {
 
 export function ContentPlaceholder({
   title,
-  note = '内容待业务方确认后补充',
+  note,
   icon,
   minHeightClass = 'min-h-40',
   className,
+  locale = defaultLocale,
 }: ContentPlaceholderProps) {
+  const { t } = getI18n(locale);
   return (
     <div
       className={cn(
@@ -54,7 +60,7 @@ export function ContentPlaceholder({
     >
       {icon ?? <DefaultIcon />}
       <p className="text-body font-medium text-text-secondary">{title}</p>
-      <p className="text-caption text-text-muted">{note}</p>
+      <p className="text-caption text-text-muted">{note ?? t('placeholder.contentNote')}</p>
     </div>
   );
 }

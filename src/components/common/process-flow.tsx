@@ -1,4 +1,6 @@
 import { cn } from '@/lib/utils';
+import { getI18n } from '@/i18n';
+import { defaultLocale, type Locale } from '@/i18n/config';
 
 /**
  * ProcessFlow —— 流程展示
@@ -18,6 +20,8 @@ export interface ProcessFlowProps {
   /** 步骤编号前缀文案 */
   stepLabel?: string;
   className?: string;
+  /** 当前语言（决定默认步骤编号前缀） */
+  locale?: Locale;
 }
 
 function ChevronRight() {
@@ -48,7 +52,15 @@ function ChevronDown() {
   );
 }
 
-export function ProcessFlow({ steps, stepLabel = 'Step', className }: ProcessFlowProps) {
+export function ProcessFlow({
+  steps,
+  stepLabel,
+  className,
+  locale = defaultLocale,
+}: ProcessFlowProps) {
+  const { t } = getI18n(locale);
+  const label = stepLabel ?? t('factory.stepLabel');
+
   return (
     <ol className={cn('flex flex-col gap-3 lg:flex-row lg:items-stretch lg:gap-0', className)}>
       {steps.map((step, index) => (
@@ -58,7 +70,7 @@ export function ProcessFlow({ steps, stepLabel = 'Step', className }: ProcessFlo
         >
           <div className="flex-1 rounded-lg border border-border bg-surface-elevated p-5">
             <span className="text-caption font-semibold tracking-wider text-primary uppercase">
-              {stepLabel} {String(index + 1).padStart(2, '0')}
+              {label} {String(index + 1).padStart(2, '0')}
             </span>
             <h3 className="mt-2 text-heading-sm">{step.title}</h3>
             {step.description ? (

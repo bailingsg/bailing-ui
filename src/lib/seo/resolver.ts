@@ -3,6 +3,8 @@ import { siteConfig, siteUrl } from '@/config/site';
 import { apiGet, isApiSource } from '@/lib/cms-api';
 import { CmsRevalidate, CmsTags } from '@/lib/cms-tags';
 import { absoluteUrl } from '@/lib/seo';
+import { defaultLocale, localeMeta, type Locale } from '@/i18n/config';
+import { localizedPath } from '@/i18n/paths';
 
 /**
  * 统一 SEO Resolver（Phase 5.0，任务书十八节）
@@ -138,7 +140,7 @@ export function applyTitleTemplate(template: string | null | undefined, title: s
 }
 
 export interface ResolveSeoInput {
-  /** 前台路径，如 /products/plywood */
+  /** 前台路径（**不带语言前缀**），如 /products/plywood */
   path: string;
   /** 内容主标题（产品名 / 文章标题 / 页面标题）——模板兜底与 content 层取值 */
   title: string;
@@ -158,6 +160,15 @@ export interface ResolveSeoInput {
   titleTemplateKey?: 'page' | 'product' | 'blog' | 'category';
   /** 直接指定标题模板（优先于 titleTemplateKey；内容标题已含品牌名时仍原样输出） */
   titleTemplate?: string | null;
+  /**
+   * 页面语言（默认 en）。
+   *
+   * 非默认语言时：
+   *   · canonical 指向本语言自己的规范 URL（绝不与英文页共用同一个 canonical）；
+   *   · 不套用后端 SEO 档案（档案只有单语言字段，套到中文页会输出英文标题）；
+   *   · 输出 hreflang（en / zh-CN / x-default）互链。
+   */
+  locale?: Locale;
 }
 
 /** 内容标题是否已是完整标题（已含品牌名时不再套模板，避免「… | Bailing Wooden | Bailing Wooden」） */
@@ -173,9 +184,14 @@ function isBrandCompleteTitle(title: string, siteName: string): boolean {
  *   return resolveSeoMetadata({ path: `/products/${slug}`, title: product.name, ... });
  */
 export async function resolveSeoMetadata(input: ResolveSeoInput): Promise<Metadata> {
-  const resolved = await fetchResolve(input.path);
-  const settings = resolved?.settings ?? systemDefaultSettings();
-  const profile = resolved?.profiles?.[0]?.profile ?? null;
+  const locale = input.locale ?? defaultLocale;
+  const isDefault = locale === defaultLocale;
+
+  // 中文页面不套用后端 SEO 档案：档案只有单语言（英文）字段，
+  // 套到中文页会把英文标题 / 描述写到中文 URL 上。
+  const resolved = isDefault ? await fetchResolve(input.path) : null;
+  const settings = resolved?.settings ?? (isDefault ? systemDefaultSettings() : await getSeoSettings());
+  const profile = isDefault ? (resolved?.profiles?.[0]?.profile ?? null) : null;
 
   // 1. 标题：档案手填 > 模板(内容标题)
   // 内容标题已含品牌名（如 CMS hero 标题、既有完整标题）时视为完整标题，不再套模板
@@ -196,16 +212,23 @@ export async function resolveSeoMetadata(input: ResolveSeoInput): Promise<Metada
     : applyTitleTemplate(template, input.title);
 
   // 2. 描述：档案 > 内容 > 全局站点描述 > 系统默认
-  const description =
-    profile?.metaDescription?.trim() ||
-    input.description?.trim() ||
-    settings.siteDescription ||
-    siteConfig.description;
+  const description = isDefault
+    ? profile?.metaDescription?.trim() ||
+      input.description?.trim() ||
+      settings.siteDescription ||
+      siteConfig.description
+    : input.description?.trim() || siteConfig.descriptionZh;
 
-  // 3. Canonical：档案 > 当前页标准 URL
-  const canonical = profile?.canonicalUrl?.trim()
-    ? absoluteUrl(profile.canonicalUrl)
-    : absoluteUrl(input.path);
+  // 3. Canonical / 语言互链
+  //    中文页永远 canonical 到自己（绝不与英文页共用 canonical）
+  const enUrl = absoluteUrl(localizedPath(input.path, defaultLocale));
+  const zhUrl = absoluteUrl(localizedPath(input.path, 'zh-CN'));
+  const canonical = isDefault
+    ? profile?.canonicalUrl?.trim()
+      ? absoluteUrl(profile.canonicalUrl)
+      : enUrl
+    : zhUrl;
+  const pageUrl = isDefault ? enUrl : zhUrl;
 
   // 4. OG：档案 > 内容图 > 全局默认 OG 图 > 系统品牌图
   const ogImage = absoluteUrl(
@@ -227,15 +250,23 @@ export async function resolveSeoMetadata(input: ResolveSeoInput): Promise<Metada
     title: { absolute: title },
     description,
     keywords: input.keywords && input.keywords.length > 0 ? input.keywords : [...siteConfig.keywords],
-    alternates: { canonical },
+    alternates: {
+      canonical,
+      languages: {
+        en: enUrl,
+        'zh-CN': zhUrl,
+        'x-default': enUrl,
+      },
+    },
     robots: indexable ? { index: true, follow } : { index: false, follow: false },
     openGraph: {
       type: input.ogType ?? 'website',
-      url: absoluteUrl(input.path),
+      url: pageUrl,
       siteName,
       title: ogTitle,
       description: ogDescription,
-      locale: siteConfig.locale,
+      locale: localeMeta[locale].ogLocale,
+      alternateLocale: localeMeta[isDefault ? 'zh-CN' : 'en'].ogLocale,
       images: [{ url: ogImage, alt: input.ogImageAlt ?? ogTitle }],
     },
     twitter: {

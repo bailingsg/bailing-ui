@@ -1,5 +1,7 @@
 import { siteConfig } from '@/config/site';
 import { absoluteUrl } from '@/lib/seo';
+import { localeMeta, defaultLocale, type Locale } from '@/i18n/config';
+import { localizedPath } from '@/i18n/paths';
 import type { ProductDetail } from '@/lib/products';
 
 /**
@@ -13,7 +15,13 @@ import type { ProductDetail } from '@/lib/products';
  *   · aggregateRating / review —— 无评价体系
  *   · sku / gtin               —— 非零售商品
  */
-export function ProductSchema({ product }: { product: ProductDetail }) {
+export function ProductSchema({
+  product,
+  locale = defaultLocale,
+}: {
+  product: ProductDetail;
+  locale?: Locale;
+}) {
   const imageUrls = product.images.map((image) => absoluteUrl(image.url));
 
   const schema: Record<string, unknown> = {
@@ -21,7 +29,8 @@ export function ProductSchema({ product }: { product: ProductDetail }) {
     '@type': 'Product',
     name: product.name,
     description: product.description,
-    url: absoluteUrl(`/products/${product.slug}`),
+    url: absoluteUrl(localizedPath(`/products/${product.slug}`, locale)),
+    inLanguage: localeMeta[locale].htmlLang,
     brand: {
       '@type': 'Brand',
       name: siteConfig.name,

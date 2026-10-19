@@ -3,6 +3,8 @@
 import * as React from 'react';
 import { OptimizedImage } from '@/components/common/optimized-image';
 import { cn } from '@/lib/utils';
+import { getI18n } from '@/i18n';
+import { defaultLocale, type Locale } from '@/i18n/config';
 import type { ProductImage } from '@/lib/products';
 
 /**
@@ -17,9 +19,17 @@ export interface ProductGalleryProps {
   /** 产品名，用作图片替代文本回退 */
   alt: string;
   className?: string;
+  /** 当前语言 */
+  locale?: Locale;
 }
 
-export function ProductGallery({ images, alt, className }: ProductGalleryProps) {
+export function ProductGallery({
+  images,
+  alt,
+  className,
+  locale = defaultLocale,
+}: ProductGalleryProps) {
+  const { t } = getI18n(locale);
   const [activeIndex, setActiveIndex] = React.useState(0);
   const active = images[activeIndex];
 
@@ -31,7 +41,8 @@ export function ProductGallery({ images, alt, className }: ProductGalleryProps) 
         aspectRatio="4/3"
         priority
         sizes="(min-width: 1024px) 50vw, 100vw"
-        placeholderLabel="Product image pending"
+        locale={locale}
+        placeholderLabel={t('common.productImagePending')}
         className={className}
       />
     );
@@ -55,7 +66,7 @@ export function ProductGallery({ images, alt, className }: ProductGalleryProps) 
                 type="button"
                 onClick={() => setActiveIndex(index)}
                 aria-pressed={index === activeIndex}
-                aria-label={`Show image ${index + 1} of ${images.length}`}
+                aria-label={t('common.showImage', { index: index + 1, total: images.length })}
                 className={cn(
                   'block w-full overflow-hidden rounded-md border outline-none',
                   'transition-colors duration-[var(--duration-fast)]',
@@ -66,8 +77,9 @@ export function ProductGallery({ images, alt, className }: ProductGalleryProps) 
                 )}
               >
                 <OptimizedImage
+                  locale={locale}
                   src={image.url}
-                  alt={image.altText ?? `${alt} — image ${index + 1}`}
+                  alt={image.altText ?? t('common.imageAltSuffix', { alt, n: index + 1 })}
                   aspectRatio="1/1"
                   sizes="120px"
                 />

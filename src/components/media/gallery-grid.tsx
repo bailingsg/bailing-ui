@@ -1,5 +1,7 @@
 import { cn } from '@/lib/utils';
 import { OptimizedImage } from '@/components/common/optimized-image';
+import { getI18n } from '@/i18n';
+import { defaultLocale, type Locale } from '@/i18n/config';
 
 /**
  * GalleryGrid —— 可复用图片画廊
@@ -40,6 +42,8 @@ export interface GalleryGridProps {
   /** 响应式 sizes 提示 */
   sizes?: string;
   className?: string;
+  /** 当前语言（决定默认占位文案） */
+  locale?: Locale;
 }
 
 const desktopColumns: Record<3 | 4, string> = {
@@ -52,12 +56,14 @@ export function GalleryGrid({
   columns = 3,
   aspectRatio = '4/3',
   placeholderCount = 6,
-  placeholderLabel = 'Photo to be added',
+  placeholderLabel,
   emptyNotice,
   showCaption = true,
   sizes = '(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw',
   className,
+  locale = defaultLocale,
 }: GalleryGridProps) {
+  const { t } = getI18n(locale);
   const isEmpty = images.length === 0;
 
   return (
@@ -75,7 +81,7 @@ export function GalleryGrid({
                   alt=""
                   aspectRatio={aspectRatio}
                   sizes={sizes}
-                  placeholderLabel={placeholderLabel}
+                  placeholderLabel={placeholderLabel ?? t('common.photoPending')}
                 />
               </div>
             ))
@@ -87,6 +93,7 @@ export function GalleryGrid({
                 <OptimizedImage
                   src={image.url}
                   alt={image.alt}
+                  locale={locale}
                   aspectRatio={aspectRatio}
                   sizes={sizes}
                 />

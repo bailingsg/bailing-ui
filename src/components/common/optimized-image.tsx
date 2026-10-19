@@ -3,6 +3,8 @@
 import * as React from 'react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { getI18n } from '@/i18n';
+import { defaultLocale, type Locale } from '@/i18n/config';
 
 /**
  * OptimizedImage —— 统一图片组件
@@ -38,6 +40,8 @@ export interface OptimizedImageProps {
   className?: string;
   /** 占位文案（无图时显示） */
   placeholderLabel?: string;
+  /** 当前语言（决定默认占位 / 失败文案） */
+  locale?: Locale;
 }
 
 function ImagePlaceholder({ label }: { label: string }) {
@@ -69,9 +73,12 @@ export function OptimizedImage({
   priority = false,
   sizes = '(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw',
   className,
-  placeholderLabel = '图片待补充',
+  placeholderLabel,
+  locale = defaultLocale,
 }: OptimizedImageProps) {
   const [failed, setFailed] = React.useState(false);
+  const { t } = getI18n(locale);
+  const label = placeholderLabel ?? t('common.photoPending');
 
   return (
     <div
@@ -93,7 +100,7 @@ export function OptimizedImage({
           className="object-cover"
         />
       ) : (
-        <ImagePlaceholder label={failed ? '图片加载失败' : placeholderLabel} />
+        <ImagePlaceholder label={failed ? t('common.imageLoadFailed') : label} />
       )}
     </div>
   );

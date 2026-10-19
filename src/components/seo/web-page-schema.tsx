@@ -1,5 +1,6 @@
 import { siteConfig, siteUrl } from '@/config/site';
 import { absoluteUrl } from '@/lib/seo';
+import { localeMeta, defaultLocale, type Locale } from '@/i18n/config';
 
 /**
  * WebPageSchema —— 页面级结构化数据（JSON-LD）
@@ -16,11 +17,18 @@ export interface WebPageSchemaProps {
   name: string;
   /** 页面描述 */
   description: string;
-  /** 页面路径，如 `/factory` */
+  /** 页面路径（已带语言前缀），如 `/factory` 或 `/zh-CN/factory` */
   path: string;
+  /** 页面语言（默认 en），写入 inLanguage */
+  locale?: Locale;
 }
 
-export function WebPageSchema({ name, description, path }: WebPageSchemaProps) {
+export function WebPageSchema({
+  name,
+  description,
+  path,
+  locale = defaultLocale,
+}: WebPageSchemaProps) {
   const url = absoluteUrl(path);
 
   const schema: Record<string, unknown> = {
@@ -30,7 +38,7 @@ export function WebPageSchema({ name, description, path }: WebPageSchemaProps) {
     name,
     description,
     url,
-    inLanguage: 'en',
+    inLanguage: localeMeta[locale].htmlLang,
     isPartOf: {
       '@type': 'WebSite',
       '@id': `${siteUrl}/#website`,

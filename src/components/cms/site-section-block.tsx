@@ -1,9 +1,11 @@
-import Link from 'next/link';
 import { Section, SectionHeader } from '@/components/layout/section';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { OptimizedImage } from '@/components/common/optimized-image';
 import type { SiteSection, SiteSectionItem, SiteSectionStat } from '@/lib/site';
+import { LocaleLink } from '@/i18n/link';
+import { getI18n } from '@/i18n';
+import { defaultLocale, type Locale } from '@/i18n/config';
 
 /**
  * 结构化内容分区渲染器（Phase 4.7）
@@ -18,25 +20,35 @@ import type { SiteSection, SiteSectionItem, SiteSectionStat } from '@/lib/site';
  *     天然无注入面（与博客 contentHtml 的后端净化路径相互独立）。
  */
 
-/** 分区 CTA 链接：站内相对路径用 next/link，其余（https / mailto / tel）用原生 a */
+/**
+ * 分区 CTA 链接：站内相对路径用 LocaleLink（自动补语言前缀），
+ * 其余（https / mailto / tel）用原生 a。
+ *
+ * CMS 里存的 URL 是**语言无关路径**（如 `/products`），因此必须经
+ * LocaleLink 补前缀，否则中文页点进去会掉回英文。
+ */
 export function SiteCtaLink({
   url,
   label,
   className,
   variant = 'primary',
   size,
+  locale = defaultLocale,
 }: {
   url: string;
   label: string;
   className?: string;
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'forest';
   size?: 'sm' | 'default' | 'lg';
+  locale?: Locale;
 }) {
   const isInternal = url.startsWith('/');
   if (isInternal) {
     return (
       <Button asChild className={className} variant={variant} size={size}>
-        <Link href={url}>{label}</Link>
+        <LocaleLink locale={locale} href={url}>
+          {label}
+        </LocaleLink>
       </Button>
     );
   }
@@ -67,7 +79,8 @@ function BodyParagraphs({ body }: { body: string }) {
 }
 
 /** 卡片列表（结构化条目：标题 / 描述 / 可选链接） */
-function ItemCards({ items }: { items: SiteSectionItem[] }) {
+function ItemCards({ items, locale }: { items: SiteSectionItem[]; locale: Locale }) {
+  const { t } = getI18n(locale);
   return (
     <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {items.map((item, index) => (
@@ -80,10 +93,11 @@ function ItemCards({ items }: { items: SiteSectionItem[] }) {
             <div className="px-6 pb-6">
               <SiteCtaLink
                 url={item.href}
-                label="Learn more"
+                label={t('common.learnMore')}
                 variant="ghost"
                 size="sm"
                 className="px-0"
+                locale={locale}
               />
             </div>
           ) : null}
@@ -117,13 +131,16 @@ export function SiteSectionContent({
   headingAs = 'h2',
   mediaAspectRatio = '16/9',
   mediaSizes = '(min-width: 1024px) 720px, 100vw',
+  locale = defaultLocale,
 }: {
   section: SiteSection;
   align?: 'left' | 'center';
   headingAs?: 'h1' | 'h2' | 'h3';
   mediaAspectRatio?: '16/9' | '4/3' | '1/1';
   mediaSizes?: string;
+  locale?: Locale;
 }) {
+  const { t } = getI18n(locale);
   const hasHeader = Boolean(section.title || section.eyebrow || section.subtitle);
 
   return (
@@ -147,17 +164,17 @@ export function SiteSectionContent({
             alt={section.media.altText ?? section.title ?? ''}
             aspectRatio={mediaAspectRatio}
             sizes={mediaSizes}
-            placeholderLabel="Photo to be added"
+            placeholderLabel={t('common.photoPending')}
           />
         </div>
       ) : null}
 
-      {section.items.length > 0 ? <ItemCards items={section.items} /> : null}
+      {section.items.length > 0 ? <ItemCards items={section.items} locale={locale} /> : null}
       {section.stats.length > 0 ? <StatRow stats={section.stats} /> : null}
 
       {section.ctaLabel && section.ctaUrl ? (
         <div>
-          <SiteCtaLink url={section.ctaUrl} label={section.ctaLabel} />
+          <SiteCtaLink url={section.ctaUrl} label={section.ctaLabel} locale={locale} />
         </div>
       ) : null}
     </div>
@@ -171,16 +188,18 @@ export function SiteSectionBlock({
   id,
   align = 'left',
   headingAs = 'h2',
+  locale = defaultLocale,
 }: {
   section: SiteSection;
   tone?: 'default' | 'surface' | 'brand' | 'forest';
   id?: string;
   align?: 'left' | 'center';
   headingAs?: 'h1' | 'h2' | 'h3';
+  locale?: Locale;
 }) {
   return (
     <Section tone={tone} id={id}>
-      <SiteSectionContent section={section} align={align} headingAs={headingAs} />
+      <SiteSectionContent section={section} align={align} headingAs={headingAs} locale={locale} />
     </Section>
   );
 }

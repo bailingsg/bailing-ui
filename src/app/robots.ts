@@ -50,7 +50,7 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
     rules: {
       userAgent: '*',
       allow: '/',
-      disallow: ['/admin', '/api', '/search', '/design-system'],
+      disallow: ['/admin', '/api', '/search', '/design-system', '/zh-CN/design-system'],
     },
     sitemap: sitemapUrl,
     host: sitemapBase,

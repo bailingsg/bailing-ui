@@ -20,6 +20,8 @@ export interface RouteSkeletonProps {
   /** 列表网格列数（lg 断点），默认 3 */
   columns?: 2 | 3 | 4;
   className?: string;
+  /** 屏幕阅读器加载提示（由 loading.tsx 按语言传入） */
+  loadingLabel?: string;
 }
 
 const columnClass: Record<2 | 3 | 4, string> = {
@@ -28,10 +30,15 @@ const columnClass: Record<2 | 3 | 4, string> = {
   4: 'lg:grid-cols-4',
 };
 
-export function RouteSkeleton({ variant = 'list', columns = 3, className }: RouteSkeletonProps) {
+export function RouteSkeleton({
+  variant = 'list',
+  columns = 3,
+  className,
+  loadingLabel = 'Loading…',
+}: RouteSkeletonProps) {
   return (
     <Container className={cn('py-16 sm:py-20', className)} aria-busy="true" aria-live="polite">
-      <span className="sr-only">Loading…</span>
+      <span className="sr-only">{loadingLabel}</span>
 
       {variant === 'detail' ? (
         <div className="flex animate-pulse flex-col gap-10">
