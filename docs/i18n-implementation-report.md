@@ -78,12 +78,22 @@
 | 加载态 / 空状态 | 骨架屏 sr-only 提示、列表空状态、占位图提示 |
 | 结构化数据 | `WebSite` / `WebPage` / `Article` / `Product` / `About` / `FAQPage` / `BreadcrumbList` 全部带 `inLanguage` 与本地化 `url` |
 
-### A7. 业务内容（CMS）处理原则
+### A7. CMS 文案的两层处理原则（重要）
 
-- **不伪造翻译**：产品名、规格、材质、认证、文章正文等 CMS 内容只有单语言版本，中文界面下**按原文展示**，绝不机翻、绝不替换成占位文案。
-- **明确提示**：非默认语言页面在业务内容区给出 `ContentFallbackNotice`（中文界面才渲染）：「本记录仅有英文版本，页面界面为中文，下方产品/文章内容按原文英文展示」。
-- **不覆盖**：UI 文案来自 `messages/*.ts`，业务内容来自 API，两者物理隔离，静态文案字典永远不会覆盖 CMS 数据。
+CMS 里其实混着**两类**内容，必须区别对待，否则中文页会出现「导航是中文、正文全是英文」：
+
+| 类型 | 例子 | 中文页处理 |
+| --- | --- | --- |
+| **页面营销文案**（`SiteSection` 的眉题 / 标题 / 副标题 / 正文 / 卡片 / CTA 标签） | 首页 hero、Capabilities、Products、Applications 分区；关于页 5 个分区；联系页 hero；工厂概述 | **不使用 CMS**，改用 `messages/zh-CN.ts` 里同一批中文文案（英文页仍由 CMS 驱动，后台照旧可编辑） |
+| **业务数据**（产品 / 分类 / 文章 / 应用场景记录 / 员工联系人） | 产品名、分类名、文章标题与正文、应用场景标题 | **按原文展示**（不机翻、不伪造），并在区块内给出 `ContentFallbackNotice` 提示 |
+
+实现方式：页面里一个开关 `const useCmsCopy = isDefaultLocale;`，中文页把 `heroSection` / `*Section` / `getFactoryOverview()` 置空，自然落到代码里既有的中文版式分支 —— 不新增文案、不复制版式。
+
+- **不伪造翻译**：产品名、规格、材质、认证、文章正文等业务数据只有单语言版本，中文界面下按原文展示，绝不机翻、绝不用英文占位替换中文。
+- **明确提示**：`ContentFallbackNotice` 仅在非默认语言且确实展示了单语言数据时渲染。
+- **不覆盖**：UI 文案来自 `messages/*.ts`，业务数据来自 API，两者物理隔离；静态文案字典永远不会覆盖 CMS 的业务数据。
 - **零后端改动**：未新增任何接口参数，未改 DTO，未改数据库。
+- **后续升级路径**：后端为 `SiteSection` / `Product` / `BlogPost` 增加语言字段（或翻译表）后，把 `useCmsCopy` 换成「按语言取 CMS」，中文页即可恢复由后台编辑。
 
 ### A8. SEO
 
@@ -159,11 +169,11 @@
 | ESLint | `npm run lint` | **通过**（0 error / 0 warning） |
 | 生产构建（api 模式） | `npm run build` | **通过** — 29 个静态页，`/en/*` 与 `/zh-CN/*` 各预渲染一套 |
 | 生产构建（demo 模式） | `NEXT_PUBLIC_CMS_SOURCE=demo npm run build` | **通过** — 47 个静态页（含博客 / 应用详情，用于验证深层路由） |
-| HTTP 回归脚本 | `node scripts/verify-i18n.mjs` | **通过 116 / 失败 0** |
+| HTTP 回归脚本 | `node scripts/verify-i18n.mjs` | **通过 126 / 失败 0** |
 | 单元测试 | — | **未执行**：项目无测试框架（无 jest / vitest），本次未引入 |
 | 浏览器 E2E（Playwright） | — | **未执行**：环境无 playwright 依赖（`require('playwright')` 失败），未安装以避免改动依赖结构 |
 
-### C1. `scripts/verify-i18n.mjs` 覆盖的 116 项
+### C1. `scripts/verify-i18n.mjs` 覆盖的 126 项
 
 1. **可访问性与 `<html lang>`**：8 条路由 × 2 语言 → 200 且 `lang` 正确、两语言 HTML 确实不同（16 项 + 16 项）
 2. **非规范 URL 归一**：`/en/products` → 301 `/products`；`/zh/products` → 301 `/zh-CN/products`；`/fr/products` → 301 `/products`；`/zh` → 301 `/zh-CN`
@@ -175,6 +185,7 @@
 8. **RFQ 契约**：中英文表单字段名集合**完全一致**，`name/company/email/country/message` 均存在，中文页显示中文标签（9 项）
 9. **导航链接语言一致性**：中文页无无前缀栏目链接、英文页无 `/zh-CN` 链接（3 项）
 10. **语言选择器存在性**（2 项）
+11. **中文页不残留英文 UI 文案**：8 条中文路由逐条检查 15 个英文 UI 词（Request Quote / Capabilities / What we do / Our Story …）均不出现（8 项）+ 反向确认英文页仍保留英文文案（2 项）
 
 ### C2. 手工 HTTP 抽查（补充）
 
@@ -206,7 +217,8 @@
 
 ## E. 已知限制与后续建议
 
-1. **CMS 业务内容仍是单语言**（最大限制）。产品 / 文章 / 工厂 / 应用场景的标题、规格、正文只有一份（英文），中文界面下按原文展示并给出提示。真正的双语内容需要**后端新增 i18n 字段或翻译表**——本次按边界未改后端。建议后续：`ProductTranslation` / `BlogPostTranslation` 之类的关联表 + `?locale=` 查询参数 + 后台翻译录入界面。
+1. **CMS 业务内容仍是单语言**（最大限制）。产品名 / 分类名 / 文章标题与正文 / 应用场景标题只有一份（英文），中文界面下按原文展示并给出提示。真正的双语内容需要**后端新增 i18n 字段或翻译表**——本次按边界未改后端。建议后续：`ProductTranslation` / `BlogPostTranslation` / `SiteSectionTranslation` 关联表 + `?locale=` 查询参数 + 后台翻译录入界面。
+   - 由此带来的**内容不一致**：中文页的营销文案来自前端 `messages/zh-CN.ts`，英文页来自 CMS。后台改英文 hero 不会同步到中文页 —— 这是当前唯一可行的取舍，已在 A7 说明升级路径。
 2. **404 首屏 HTML 是 Next 的空壳**。`notFound()` 在动态渲染中触发时，Next.js 15 输出 `__next_error__` 外壳，404 正文随 RSC 载荷下发，浏览器渲染完全正常（HTTP 404 + `noindex` 均正确）。这是框架行为，无 JS 环境会看到空白。若必须让首屏就有完整 404 HTML，需要把 `<html>` 移到根布局并用请求头决定语言，代价是全站失去静态化 —— 不建议为此取舍。
 3. **未做浏览器 E2E**。环境无 Playwright 依赖；语言切换的点击交互、Cookie 落盘、下拉键盘操作仅经代码审阅 + 服务端行为验证。建议后续在 CI 中补 Playwright（`@playwright/test` + 现有 `verify-i18n.mjs` 的断言可直接复用）。
 4. **中文页 `keywords` 仍是英文词表**。Google 已不参考 `<meta keywords>`，未单独维护中文关键词；如需 Bing / 百度等，可补一份中文词表。

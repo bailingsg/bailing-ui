@@ -261,6 +261,52 @@ async function main() {
   check('英文页有语言选择器（Language）', navEn.body.includes('English'));
   check('中文页有语言选择器（简体中文）', navZh.body.includes('简体中文'));
 
+  // ---------------------------------------------------------------------
+  // 11. 中文页不得残留英文 UI 文案
+  //     背景：CMS 的页面营销文案只有英文一套，若中文页直接套用 CMS，
+  //     会出现「导航是中文、正文全是英文」。这里逐条守住回归。
+  // ---------------------------------------------------------------------
+  console.log('\n== 11. 中文页不残留英文 UI 文案 ==');
+  const ENGLISH_UI = [
+    'Request Quote',
+    'View Products',
+    'View All',
+    'View Details',
+    'Capabilities',
+    'What we do',
+    'Product categories',
+    'Where our products are used',
+    'Frequently asked questions',
+    'Ready to source wooden products',
+    'Contact Us',
+    'Page not found',
+    'Read article',
+    'Send an enquiry',
+    'Our Story',
+  ];
+
+  for (const page of PAGES) {
+    const zh = await fetchText(page.zh);
+    const leftovers = ENGLISH_UI.filter((text) => zh.body.includes(text));
+    check(
+      `${page.zh} 无英文 UI 残留`,
+      leftovers.length === 0,
+      leftovers.length > 0 ? `残留：${leftovers.join(' / ')}` : '',
+    );
+  }
+
+  // 反向校验：英文页仍应保留这些英文文案（证明没有把英文也一起改坏）
+  const enHome = await fetchText('/');
+  check(
+    '英文首页仍保留英文营销文案',
+    enHome.body.includes('Request Quote') && enHome.body.includes('Capabilities'),
+  );
+  const enContact = await fetchText('/contact');
+  check(
+    '英文联系页仍保留英文表单文案',
+    enContact.body.includes('Send an enquiry') || enContact.body.includes('Request for Quotation'),
+  );
+
   console.log(`\n--------------------------------------------`);
   console.log(`通过 ${passed} 项，失败 ${failed} 项`);
   if (failed > 0) {

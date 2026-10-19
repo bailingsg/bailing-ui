@@ -72,8 +72,9 @@ export default async function FactoryPage({ params }: FactoryPageProps) {
       getImages(['equipment']),
       getImages(['loading']),
       getImages(['exhibition']),
-      // demo 模式返回 null（不发请求），页面保留既有待补充版式
-      getFactoryOverview(),
+      // demo 模式返回 null（不发请求），页面保留既有待补充版式；
+      // 中文页不使用 CMS 概述（只有英文），改用 messages 里的中文文案
+      isDefaultLocale ? getFactoryOverview() : Promise.resolve(null),
     ]);
 
   const productionSteps = Object.values(m.factory.steps);

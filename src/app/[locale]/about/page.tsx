@@ -99,16 +99,23 @@ export default async function AboutPage({ params }: AboutPageProps) {
     ]);
 
   const byKey = new Map(sections.map((section) => [section.sectionKey, section]));
+
+  /**
+   * 中文页不使用 CMS 的分区文案（CMS 只有英文一套），
+   * 改用 messages/zh-CN.ts 里的中文版式；英文页仍由 CMS 驱动。
+   */
+  const useCmsCopy = isDefaultLocale;
+
   // 分区键与后端 seed-site-content.ts 的 about.* 命名保持一致
-  const heroSection = byKey.get('about.hero') ?? null;
-  const profileSection = byKey.get('about.profile') ?? null;
-  const storySection = byKey.get('about.story') ?? null;
-  const philosophySection = byKey.get('about.philosophy') ?? null;
-  const whySection = byKey.get('about.why') ?? null;
-  const solutionsSection = byKey.get('about.solutions') ?? null;
+  const heroSection = useCmsCopy ? (byKey.get('about.hero') ?? null) : null;
+  const profileSection = useCmsCopy ? (byKey.get('about.profile') ?? null) : null;
+  const storySection = useCmsCopy ? (byKey.get('about.story') ?? null) : null;
+  const philosophySection = useCmsCopy ? (byKey.get('about.philosophy') ?? null) : null;
+  const whySection = useCmsCopy ? (byKey.get('about.why') ?? null) : null;
+  const solutionsSection = useCmsCopy ? (byKey.get('about.solutions') ?? null) : null;
 
   const heroImage = companyImages[0];
-  const hasCmsSections = sections.length > 0;
+  const hasCmsSections = useCmsCopy && sections.length > 0;
 
   /** 团队/公司素材缺失时的分类说明（用于占位提示，保持诚实） */
   const emptyCategoryNote: Partial<Record<AboutImageCategory, string>> = {

@@ -99,7 +99,10 @@ export default async function ContactPage({ params, searchParams }: ContactPageP
     getSiteSections('CONTACT'),
     getPublicContacts(),
   ]);
-  const heroSection = sections.find((section) => section.sectionKey === 'contact.hero') ?? null;
+  // 中文页不使用 CMS 的 hero 文案（CMS 只有英文一套），改用内置中文文案
+  const heroSection = isDefaultLocale
+    ? sections.find((section) => section.sectionKey === 'contact.hero') ?? null
+    : null;
 
   /** 联系渠道（标题 / 说明本地化，取值来自站点配置，未确认前显示占位文案） */
   const channels: { title: string; value: string; hint: string }[] = [

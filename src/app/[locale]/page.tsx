@@ -75,11 +75,24 @@ export default async function HomePage({ params }: HomePageProps) {
   const sections = await getSiteSections('HOME');
   const byKey = new Map(sections.map((section) => [section.sectionKey, section]));
 
-  const heroSection = byKey.get('home.hero') ?? null;
-  const capabilitiesSection = byKey.get('home.capabilities') ?? null;
-  const productsSection = byKey.get('home.products') ?? null;
-  const applicationsSection = byKey.get('home.applications') ?? null;
-  const ctaSection = byKey.get('home.cta') ?? null;
+  /**
+   * 中文页**不使用** CMS 的页面营销文案。
+   *
+   * 原因：CMS 的分区文案（眉题 / 标题 / 副标题 / 正文 / 卡片 / CTA 标签）
+   * 目前只有英文一套，直接套到中文页会出现「界面是中文、整页正文却是英文」。
+   * 这里改为按语言取用：英文页继续由 CMS 驱动（后台可编辑），
+   * 中文页改用 messages/zh-CN.ts 里同一批中文文案。
+   *
+   * 注意：业务数据（产品目录、文章、应用场景记录）不受影响——它们走各自的数据源，
+   * 中文界面下按原文展示并给出「内容语言」提示。
+   */
+  const useCmsCopy = isDefaultLocale;
+
+  const heroSection = useCmsCopy ? (byKey.get('home.hero') ?? null) : null;
+  const capabilitiesSection = useCmsCopy ? (byKey.get('home.capabilities') ?? null) : null;
+  const productsSection = useCmsCopy ? (byKey.get('home.products') ?? null) : null;
+  const applicationsSection = useCmsCopy ? (byKey.get('home.applications') ?? null) : null;
+  const ctaSection = useCmsCopy ? (byKey.get('home.cta') ?? null) : null;
 
   // 产品分类：仅 api 模式拉取真实目录；demo 模式保持占位卡片
   const categories = isDemoSource() ? [] : await getCategories();
@@ -153,11 +166,14 @@ export default async function HomePage({ params }: HomePageProps) {
               <Badge variant="material" className="w-fit">
                 {t('home.heroBadge')}
               </Badge>
-              <h1 className="text-display text-balance">{siteConfig.name}</h1>
+              {/* 英文页主标题用英文品牌名 + 中文品牌副行；中文页主标题用中文品牌名 */}
+              <h1 className="text-display text-balance">
+                {isDefaultLocale ? siteConfig.name : siteConfig.nameZh}
+              </h1>
               <p className="text-heading-sm font-normal text-text-muted">
                 {isDefaultLocale
                   ? `${siteConfig.nameZh} · ${siteConfig.taglineZh}`
-                  : `${siteConfig.nameZh} · ${siteConfig.taglineZh}`}
+                  : siteConfig.taglineZh}
               </p>
               <p className="max-w-2xl text-body-lg text-text-secondary text-pretty">
                 {isDefaultLocale ? siteConfig.description : siteConfig.descriptionZh}
@@ -238,19 +254,46 @@ export default async function HomePage({ params }: HomePageProps) {
                 </Button>
               }
             />
-            <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {Array.from({ length: 6 }, (_, index) => (
-                <ContentPlaceholder
-                  key={index}
-                  locale={locale}
-                  title={t('home.productsPlaceholderTitle', {
-                    index: String(index + 1).padStart(2, '0'),
-                  })}
-                  note={m.home.productsPlaceholderNote}
-                  minHeightClass="min-h-44"
-                />
-              ))}
-            </div>
+            {/* 有真实分类就展示分类入口；否则仅在 demo 数据源下显示占位卡片 */}
+            {categories.length > 0 ? (
+              <>
+                <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {categories.map((category) => (
+                    <Card key={category.id ?? category.slug}>
+                      <CardHeader>
+                        <CardTitle>
+                          <LocaleLink
+                            locale={locale}
+                            href={`/products?category=${encodeURIComponent(category.slug)}`}
+                            className="transition-colors hover:text-primary"
+                          >
+                            {category.name}
+                          </LocaleLink>
+                        </CardTitle>
+                        {category.description ? (
+                          <CardDescription>{category.description}</CardDescription>
+                        ) : null}
+                      </CardHeader>
+                    </Card>
+                  ))}
+                </div>
+                <ContentFallbackNotice locale={locale} variant="subtle" className="mt-4" />
+              </>
+            ) : isDemoSource() ? (
+              <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {Array.from({ length: 6 }, (_, index) => (
+                  <ContentPlaceholder
+                    key={index}
+                    locale={locale}
+                    title={t('home.productsPlaceholderTitle', {
+                      index: String(index + 1).padStart(2, '0'),
+                    })}
+                    note={m.home.productsPlaceholderNote}
+                    minHeightClass="min-h-44"
+                  />
+                ))}
+              </div>
+            ) : null}
           </>
         )}
       </Section>
