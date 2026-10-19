@@ -196,8 +196,9 @@
 
 - 仓库：`bailing-ui`（唯一改动仓库）
 - 分支：`261017`（从 `dev` 拉出的当日分支）
-- 提交：见提交哈希（`feat(i18n): 前台中英文切换`）
+- 提交：`c958466` — `feat(i18n): 前台中英文切换（as-needed 前缀 + Cookie 持久化 + 双语 SEO）`
 - 工作区：提交后 clean
+- 变更规模：60 个文件（17 个路由文件 `git mv` 到 `src/app/[locale]/`、36 个修改、15 个新增）
 - `bailing-backend`：**无任何改动**（`git status` 干净）
 - `bailing-admin`：存在 2 个**本次任务之前就已存在**的未提交改动（`src/app/(dashboard)/rfq/page.tsx`、`src/lib/rfq.ts`），与本次 i18n 无关，**未触碰、未回退**
 
