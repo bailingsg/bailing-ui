@@ -135,6 +135,8 @@ export const en = {
       'Product categories and specifications will be published from the product catalog.',
     productsPlaceholderTitle: 'Product Category {index}',
     productsPlaceholderNote: 'Populated from the product catalog in the next phase',
+    /** 分类卡片右下角 CTA：文案随界面语言切换（中文「点此查看相关产品」/ 英文 "View related products"） */
+    categoryCta: 'View related products',
     applicationsEyebrow: 'Applications',
     applicationsTitle: 'Where our products are used',
     applicationsDescription:
@@ -711,6 +713,10 @@ export const en = {
     contactsEyebrow: 'Sales Contacts',
     contactsTitle: 'Who you will be talking to',
     contactsDescription: 'Published sales contacts for quotations and order follow-up.',
+    /** 「发送给某销售」站内信箱弹窗标题（{name} 为销售姓名） */
+    directSendTitle: 'Send to {name}',
+    /** 无对外邮箱时的占位 */
+    noPublicEmail: 'Email not published yet',
     rfqEyebrow: 'Request for Quotation',
     rfqTitle: 'Send an enquiry',
     rfqDescription:
@@ -749,9 +755,14 @@ export const en = {
     },
     locationEyebrow: 'Location',
     locationTitle: 'Find us',
-    locationDescription: 'An interactive map will be embedded here once the address is confirmed.',
+    locationDescription:
+      'Address: The Cross Of Weigao And Xihuan Road, Shouguang City, Shandong Province, China',
     locationPlaceholderTitle: 'Map placeholder',
     locationPlaceholderNote: 'Address pending confirmation',
+    locationMapLoad: 'Load Google Map',
+    locationMapHint: 'The map loads only after you click, so no Google cookies are set before that.',
+    locationMapAmap: 'View on Amap (faster in mainland China)',
+    locationMapLarger: 'View larger map',
     ctaTitle: 'Ready to discuss your project?',
     ctaDescription:
       'Send your specification or drawing — our export team will review it and respond with a quotation.',
@@ -786,6 +797,9 @@ export const en = {
     attachmentSelectedNote:
       '"{name}" selected — online file upload is not enabled yet, so please also describe it in your requirements.',
     privacy: 'We only use your details to respond to this enquiry.',
+    /** 直发模式提示（{name} 为收件销售姓名） */
+    directNote:
+      'This enquiry goes straight to {name}, so it does not go through the general enquiry queue.',
     submit: 'Submit Request',
     submitting: 'Submitting…',
     successTitle: 'Thank you for your inquiry.',

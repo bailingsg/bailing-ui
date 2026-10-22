@@ -15,7 +15,7 @@ import { getI18n } from '@/i18n';
 import { defaultLocale, isLocale, type Locale } from '@/i18n/config';
 import { localizedPath } from '@/i18n/paths';
 import { getApplications, hasAllApplicationImages, type Application } from '@/lib/applications';
-import { getProductBySlug, type ProductListItem } from '@/lib/products';
+import { getProductBySlug, productDetailPath, type ProductListItem } from '@/lib/products';
 import type { Translator } from '@/i18n/translate';
 
 /**
@@ -250,7 +250,7 @@ export default async function ApplicationsPage({ params }: ApplicationsPageProps
                     ? [{ label: product.category.name, variant: 'application' as const }]
                     : []
                 }
-                href={`/products/${product.slug}`}
+                href={productDetailPath(product)}
                 ctaLabel={t('common.viewDetails')}
               />
             ))}

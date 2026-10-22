@@ -217,7 +217,32 @@
   }
 
   .blog-prose img {
-    @apply h-auto rounded-lg border border-border;
+    @apply h-auto max-w-full rounded-lg border border-border;
+  }
+
+  /*
+   * WP emoji 图片兜底：正文中的 <img class="emoji"> 无 width/height 属性，
+   * 旧站靠 WP 内联 CSS（img.emoji{width:1em!important}）约束，未迁移到新站
+   * （审计 D-02）。清洗管线已把可识别 emoji 还原为 Unicode 字符，此规则为
+   * 「漏网 emoji / 未来 CMS 误入」的防御层；特异性高于上面的通用 img 规则，
+   * 不会波及其它正文图片。
+   */
+  .blog-prose img.emoji {
+    @apply inline h-[1em] w-[1em] rounded-none border-0 align-[-0.1em];
+  }
+
+  /*
+   * 盒式标题（审计 D-04）：旧站 h2 自带内联 border-left + 背景样式。清洗管线把
+   * 它转换为受控 class prose-boxed-heading（视觉语义：色带 + 浅底 + 内边距保留，
+   * 颜色归入新站品牌令牌）。仅在 .blog-prose 内生效，不影响其它组件。
+   */
+  .blog-prose :is(h2, h3, h4).prose-boxed-heading {
+    @apply border-border-brand bg-surface border-l-4 px-4 py-3;
+  }
+
+  /* 宽表格横向滚动容器（清洗管线包裹 <table>；语义保留，不拆表格） */
+  .blog-prose .prose-table-scroll {
+    @apply overflow-x-auto;
   }
 
   .blog-prose figure {
@@ -250,6 +275,129 @@
   }
 
   .blog-prose mark {
+    @apply rounded bg-accent px-1 text-accent-foreground;
+  }
+
+  /* --------------------------------------------------------------------------
+   * 产品详情正文排版（.product-prose）
+   *
+   * 与 .blog-prose 同源（CMS 富文本正文），标签集合对应后端 sanitizeRichText
+   * 白名单。但产品正文的视觉密度比博客略低（清单条目更少、长段落更多），
+   * 适当放宽行距、收紧 h2 字号以避免视觉过重。
+   *
+   * 信任边界：HTML 来源 = 后端 sanitizeRichText 净化结果。
+   * --------------------------------------------------------------------------*/
+  .product-prose {
+    @apply text-body text-text-secondary;
+  }
+
+  .product-prose > * + * {
+    @apply mt-5;
+  }
+
+  .product-prose h1,
+  .product-prose h2,
+  .product-prose h3,
+  .product-prose h4,
+  .product-prose h5,
+  .product-prose h6 {
+    @apply mt-10 mb-3 text-foreground;
+  }
+
+  .product-prose h2 {
+    @apply text-heading-sm;
+  }
+
+  .product-prose h3 {
+    @apply text-body-lg font-semibold;
+  }
+
+  .product-prose h4,
+  .product-prose h5,
+  .product-prose h6 {
+    @apply text-body font-semibold;
+  }
+
+  .product-prose strong,
+  .product-prose b {
+    @apply font-semibold text-foreground;
+  }
+
+  .product-prose a {
+    @apply text-primary underline underline-offset-4 transition-colors hover:text-primary-hover;
+  }
+
+  .product-prose ul,
+  .product-prose ol {
+    @apply pl-6;
+  }
+
+  .product-prose ul {
+    @apply list-disc;
+  }
+
+  .product-prose ol {
+    @apply list-decimal;
+  }
+
+  .product-prose li + li {
+    @apply mt-2;
+  }
+
+  .product-prose li::marker {
+    @apply text-text-muted;
+  }
+
+  .product-prose blockquote {
+    @apply rounded-r-md border-l-4 border-border-brand bg-surface px-5 py-4 text-text-secondary italic;
+  }
+
+  .product-prose pre {
+    @apply overflow-x-auto rounded-md border border-border bg-surface p-4 text-small text-foreground;
+  }
+
+  .product-prose code {
+    @apply rounded bg-muted px-1.5 py-0.5 text-small text-foreground;
+  }
+
+  .product-prose pre code {
+    @apply bg-transparent p-0;
+  }
+
+  .product-prose img {
+    @apply my-6 h-auto rounded-lg border border-border;
+  }
+
+  .product-prose figure {
+    @apply my-6;
+  }
+
+  .product-prose figcaption {
+    @apply mt-2 text-center text-caption text-text-muted;
+  }
+
+  .product-prose hr {
+    @apply my-8 border-border;
+  }
+
+  .product-prose table {
+    @apply my-6 w-full border-collapse text-small;
+  }
+
+  .product-prose th,
+  .product-prose td {
+    @apply border border-border px-3 py-2 text-left align-top;
+  }
+
+  .product-prose th {
+    @apply bg-surface font-semibold text-foreground;
+  }
+
+  .product-prose caption {
+    @apply mb-2 text-caption text-text-muted;
+  }
+
+  .product-prose mark {
     @apply rounded bg-accent px-1 text-accent-foreground;
   }
 }

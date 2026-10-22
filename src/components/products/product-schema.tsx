@@ -2,7 +2,7 @@ import { siteConfig } from '@/config/site';
 import { absoluteUrl } from '@/lib/seo';
 import { localeMeta, defaultLocale, type Locale } from '@/i18n/config';
 import { localizedPath } from '@/i18n/paths';
-import type { ProductDetail } from '@/lib/products';
+import { productDetailPath, type ProductDetail } from '@/lib/products';
 
 /**
  * ProductSchema —— Schema.org Product 结构化数据（JSON-LD）
@@ -29,7 +29,7 @@ export function ProductSchema({
     '@type': 'Product',
     name: product.name,
     description: product.description,
-    url: absoluteUrl(localizedPath(`/products/${product.slug}`, locale)),
+    url: absoluteUrl(localizedPath(productDetailPath(product), locale)),
     inLanguage: localeMeta[locale].htmlLang,
     brand: {
       '@type': 'Brand',

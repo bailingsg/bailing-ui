@@ -80,6 +80,7 @@ function demoProduct(
     category: category ? { id: category.id, slug: category.slug, name: category.name } : null,
     material: null,
     application: null,
+    applications: null,
     featured,
     // 不提供任何图片素材：详情页将展示 OptimizedImage 的统一占位
     images: [],
@@ -112,6 +113,7 @@ function toListItem(product: ProductDetail): ProductListItem {
     category: product.category,
     material: product.material,
     application: product.application,
+    applications: product.applications,
     featured: product.featured,
     images: product.images,
   };
@@ -153,4 +155,9 @@ export function queryDemoProducts(query: {
 
 export function findDemoProduct(slug: string): ProductDetail | null {
   return demoProducts.find((item) => item.slug === slug) ?? null;
+}
+
+/** 按 id 查找（前台详情路由 /products/[slugId]，由 slug-id 解析出 id） */
+export function findDemoProductById(id: string): ProductDetail | null {
+  return demoProducts.find((item) => item.id === id) ?? null;
 }

@@ -101,7 +101,7 @@ export function Footer({ items, locale }: { items: PublicNavItem[]; locale: Loca
               <ContactRow label={t('nav.phone')} value={contactInfo.phone} placeholder={placeholder} />
               <ContactRow
                 label={t('nav.address')}
-                value={contactInfo.address}
+                value={isDefaultLocale ? contactInfo.addressEn : contactInfo.address}
                 placeholder={placeholder}
               />
             </dl>

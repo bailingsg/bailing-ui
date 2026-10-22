@@ -30,6 +30,11 @@ export interface ProductListItem {
   category: ProductCategoryRef | null;
   material: string | null;
   application: string | null;
+  /**
+   * 应用标签（后台 CMS「应用标签」维护，最多 20 项）。
+   * 未配置 / 非法结构一律为 null（不伪造标签）。
+   */
+  applications: string[] | null;
   featured: boolean;
   images: ProductImage[];
 }

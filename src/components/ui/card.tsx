@@ -47,7 +47,11 @@ function CardTitle({ className, ...props }: React.ComponentProps<'h3'>) {
   return (
     <h3
       data-slot="card-title"
-      className={cn('text-heading-sm font-semibold text-foreground', className)}
+      // 自定义字号 token 与颜色 token 不经 cn()：tailwind-merge 不识别
+      // @theme 注册的 text-heading-*，会误判为 text-* 颜色类而互相吞掉
+      className={['text-heading-sm font-semibold text-foreground', className]
+        .filter(Boolean)
+        .join(' ')}
       {...props}
     />
   );
@@ -57,7 +61,8 @@ function CardDescription({ className, ...props }: React.ComponentProps<'p'>) {
   return (
     <p
       data-slot="card-description"
-      className={cn('text-small text-text-secondary', className)}
+      // 同上：text-small 与 text-text-secondary 必须原样并列
+      className={['text-small text-text-secondary', className].filter(Boolean).join(' ')}
       {...props}
     />
   );

@@ -18,6 +18,11 @@ export interface RfqSubmitPayload {
   message: string;
   quantity?: string;
   attachmentUrl?: string;
+  /**
+   * 直发收件邮箱（可选，来自「发送给某销售」弹窗）。
+   * 后端校验其必须是已公开的销售联系人对外邮箱，否则照常走轮询分配。
+   */
+  directEmail?: string;
 }
 
 /** 创建成功后的最小回执（后端不回声客户隐私字段） */
@@ -27,7 +32,7 @@ export interface RfqReceipt {
   createdAt: string;
 }
 
-/** 关联产品（来自产品详情页 Request Quote 的 ?product=slug） */
+/** 关联产品（来自产品详情页 Request Quote 的 ?product=id，旧链接兼容 slug） */
 export interface RfqProductRef {
   id: string;
   name: string;

@@ -2,6 +2,7 @@ import {
   demoCategories,
   demoProducts,
   findDemoProduct,
+  findDemoProductById,
   queryDemoProducts,
 } from './demo-data';
 import type {
@@ -63,7 +64,33 @@ export async function getProducts(query: ProductQuery = {}): Promise<PaginatedPr
   return result;
 }
 
-/** 产品详情；不存在或未发布返回 null（页面据此调用 notFound()） */
+/**
+ * 产品详情：按 id 查询（前台详情路由 /products/[slugId]，由 slug-id 解析出 id）。
+ *
+ * 实体缓存 tag 以 id 为键，与后端失效契约（cms/products notifyFrontend）一致。
+ */
+export async function getProductById(id: string): Promise<ProductDetail | null> {
+  if (getProductsSource() === 'demo') {
+    return findDemoProductById(id);
+  }
+
+  try {
+    return await apiGet<ProductDetail>(`/products/by-id/${encodeURIComponent(id)}`, {
+      // 同时挂列表 tag：产品改名 / 换图会影响列表卡片
+      tags: [CmsTags.product(id), CmsTags.products],
+      revalidate: CmsRevalidate.CONTENT,
+    });
+  } catch (error) {
+    if (isNotFound(error)) return null;
+    throw error;
+  }
+}
+
+/**
+ * 产品详情：按 slug 查询（兼容保留：应用场景 / 博客关联产品解析、
+ * 旧链接 `?product=slug` 回落）。实体粒度 tag 由 id 版承担，
+ * 这里只挂列表 tag（失效粒度由 300s revalidate 兜底）。
+ */
 export async function getProductBySlug(slug: string): Promise<ProductDetail | null> {
   if (getProductsSource() === 'demo') {
     return findDemoProduct(slug);
@@ -71,8 +98,7 @@ export async function getProductBySlug(slug: string): Promise<ProductDetail | nu
 
   try {
     return await apiGet<ProductDetail>(`/products/${encodeURIComponent(slug)}`, {
-      // 同时挂列表 tag：产品改名 / 换图会影响列表卡片
-      tags: [CmsTags.product(slug), CmsTags.products],
+      tags: [CmsTags.products],
       revalidate: CmsRevalidate.CONTENT,
     });
   } catch (error) {
@@ -95,19 +121,43 @@ export async function getCategories(): Promise<ProductCategory[]> {
 }
 
 /**
- * 用于 generateStaticParams / sitemap 的 slug 列表。
+ * 用于 generateStaticParams / sitemap 的产品 id 列表（详情路由 /products/[id]）。
  *
  * api 模式下接口不可用会如实抛错（构建失败即暴露问题，而不是静默产出
  * 一个"看似成功但内容缺失"的站点）——与 blog / 站点内容模块保持一致。
  */
-export async function getProductSlugs(): Promise<string[]> {
+export async function getProductIds(): Promise<string[]> {
   if (getProductsSource() === 'demo') {
-    return demoProducts.map((product) => product.slug);
+    return demoProducts.map((product) => product.id);
   }
 
   const result = await apiGet<PaginatedProducts>('/products?pageSize=48', {
     tags: [CmsTags.products],
     revalidate: CmsRevalidate.CONTENT,
   });
-  return result.items.map((item) => item.slug);
+  return result.items.map((item) => item.id);
+}
+
+/** slug + id 对（详情路由 /products/[slugId] 的预渲染键） */
+export interface ProductSlugId {
+  slug: string;
+  id: string;
+}
+
+/**
+ * 用于 generateStaticParams / sitemap 的产品 slug-id 列表（详情路由
+ * /products/[slugId]，URL 由 slug-id 拼接而成）。
+ *
+ * 与 getProductIds 同源（/products?pageSize=48），仅投影字段不同。
+ */
+export async function getProductSlugIds(): Promise<ProductSlugId[]> {
+  if (getProductsSource() === 'demo') {
+    return demoProducts.map((product) => ({ slug: product.slug, id: product.id }));
+  }
+
+  const result = await apiGet<PaginatedProducts>('/products?pageSize=48', {
+    tags: [CmsTags.products],
+    revalidate: CmsRevalidate.CONTENT,
+  });
+  return result.items.map((item) => ({ slug: item.slug, id: item.id }));
 }

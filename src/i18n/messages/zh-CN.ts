@@ -129,6 +129,8 @@ export const zhCN = {
     productsDescription: '产品分类与规格信息将由产品目录发布。',
     productsPlaceholderTitle: '产品分类 {index}',
     productsPlaceholderNote: '后续阶段由产品目录填充',
+    /** 分类卡片右下角 CTA：文案随界面语言切换（中文「点此查看相关产品」/ 英文 "View related products"） */
+    categoryCta: '点此查看相关产品',
     applicationsEyebrow: '应用场景',
     applicationsTitle: '产品用在哪里',
     applicationsDescription: '木制品制造商服务的典型应用领域，具体案例待确认后补充。',
@@ -607,6 +609,10 @@ export const zhCN = {
     contactsEyebrow: '销售联系人',
     contactsTitle: '您将对接的同事',
     contactsDescription: '已公开发布的销售联系人，负责报价与订单跟进。',
+    /** 「发送给某销售」站内信箱弹窗标题（{name} 为销售姓名） */
+    directSendTitle: '发送给 {name}',
+    /** 无对外邮箱时的占位 */
+    noPublicEmail: '暂未公开邮箱',
     rfqEyebrow: '询价',
     rfqTitle: '发送询盘',
     rfqDescription: '请在下方表单填写需求，我们的出口团队会审核每一条询盘并回复报价。',
@@ -640,9 +646,13 @@ export const zhCN = {
     },
     locationEyebrow: '位置',
     locationTitle: '找到我们',
-    locationDescription: '地址确认后将在此嵌入交互地图。',
+    locationDescription: '地址：寿光文家潍高路与西环路交界处',
     locationPlaceholderTitle: '地图占位',
     locationPlaceholderNote: '地址待确认',
+    locationMapLoad: '加载 Google 地图',
+    locationMapHint: '点击后才会加载地图，此前不会写入 Google Cookie。',
+    locationMapAmap: '在高德地图中查看（国内更快）',
+    locationMapLarger: '查看大图',
     ctaTitle: '准备好讨论您的项目了吗？',
     ctaDescription: '发送您的规格或图纸 —— 我们的出口团队将审核并回复报价。',
   },
@@ -674,6 +684,8 @@ export const zhCN = {
     attachmentTooLarge: '“{name}” 超过 {max}MB，将不会被发送。',
     attachmentSelectedNote: '已选择“{name}” —— 在线附件上传尚未启用，请在需求描述中一并说明。',
     privacy: '您的信息仅用于回复本次询盘。',
+    /** 直发模式提示（{name} 为收件销售姓名） */
+    directNote: '本询盘将直接送达 {name}，不进入公共询盘分配队列。',
     submit: '提交询盘',
     submitting: '提交中…',
     successTitle: '感谢您的询盘。',

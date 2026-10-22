@@ -21,11 +21,22 @@ import {
 
 type Status = 'idle' | 'submitting' | 'success' | 'error';
 
+/** 直发收件人（Sales Contacts → 站内信箱） */
+export interface RfqRecipient {
+  displayName: string;
+  displayEmail: string;
+}
+
 export interface RfqFormProps {
-  /** 由 `/contact?product={slug}` 解析出的关联产品 */
+  /** 由 `/contact?product={id|slug}` 解析出的关联产品 */
   product?: RfqProductRef | null;
   /** 当前语言（仅影响文案，不影响提交字段） */
   locale?: Locale;
+  /**
+   * 直发收件人（站内信箱弹窗）。非空时提交体带 directEmail：
+   * 后端校验该邮箱必须是已公开的销售联系人，询盘直达其信箱且不参与轮询分配。
+   */
+  recipient?: RfqRecipient | null;
 }
 
 /**
@@ -40,7 +51,11 @@ export interface RfqFormProps {
  *     message / phone / quantity / productId / productName），
  *     语言切换不会改变后端契约，也不会导致重复提交。
  */
-export function RfqForm({ product = null, locale = defaultLocale }: RfqFormProps) {
+export function RfqForm({
+  product = null,
+  locale = defaultLocale,
+  recipient = null,
+}: RfqFormProps) {
   const { t, isDefaultLocale } = getI18n(locale);
   const requiredFields = React.useMemo(() => getRfqRequiredFields(t), [t]);
   const optionalFields = React.useMemo(() => getRfqOptionalFields(t), [t]);
@@ -114,6 +129,8 @@ export function RfqForm({ product = null, locale = defaultLocale }: RfqFormProps
         // 关联产品优先取 URL 带入的产品；否则取手填的产品名
         productId: product?.id,
         productName: product?.name ?? (productNameFromInput || undefined),
+        // 直发收件人（站内信箱）：为空时 compact() 会剔除该字段，契约与普通询盘完全一致
+        directEmail: recipient?.displayEmail,
         // 附件本阶段不实际上传（无对象存储），因此不提交 attachmentUrl
       });
 
@@ -142,10 +159,6 @@ export function RfqForm({ product = null, locale = defaultLocale }: RfqFormProps
       }
       setStatus('error');
     }
-  }
-
-  if (status === 'success') {
-    return <RfqSuccess reference={reference} onReset={resetForm} locale={locale} />;
   }
 
   const submitting = status === 'submitting';
@@ -282,20 +295,35 @@ export function RfqForm({ product = null, locale = defaultLocale }: RfqFormProps
         ) : null}
       </div>
 
-      {/* 提交区 */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-caption text-text-muted">{t('rfq.privacy')}</p>
-        <Button type="submit" size="lg" loading={submitting}>
-          {submitting ? t('rfq.submitting') : t('rfq.submit')}
-        </Button>
+      {/* 提交区（按钮居中 + 双语按钮文案「发送邮件 / Send」） */}
+      <div className="flex flex-col items-center gap-3">
+        {status === 'success' ? (
+          /* 成功提示内联展示：不去替换表单，让用户能确认自己提交的内容；
+             同时不再渲染"提交成功"的大弹窗（按用户改造要求）。 */
+          <RfqSuccess reference={reference} onReset={resetForm} locale={locale} />
+        ) : (
+          <>
+            <p className="text-caption text-text-muted text-center">{t('rfq.privacy')}</p>
+            <Button type="submit" size="lg" loading={submitting}>
+              {submitting ? t('rfq.submitting') : '发送邮件 / Send'}
+            </Button>
+          </>
+        )}
       </div>
 
-      {/* 失败反馈 */}
+      {/* 直发说明：访客指定了收件人时展示（普通询盘不出现该行） */}
+      {recipient ? (
+        <p className="rounded-md border border-border bg-surface-elevated px-4 py-3 text-caption text-text-secondary">
+          {t('rfq.directNote', { name: recipient.displayName })}
+        </p>
+      ) : null}
+
+      {/*
+        失败提示：按用户要求"删除红色内容"，从原 border-destructive/40 bg-destructive/5
+        改为中性色 inline 小字（功能保留，避免用户提交失败后没有任何反馈）。
+      */}
       {status === 'error' ? (
-        <p
-          role="alert"
-          className="rounded-md border border-destructive/40 bg-destructive/5 px-4 py-3 text-small text-destructive"
-        >
+        <p role="alert" className="text-caption text-text-secondary">
           {t('rfq.failure')}
         </p>
       ) : null}

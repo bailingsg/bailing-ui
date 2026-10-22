@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
+import { ArrowRight } from 'lucide-react';
 import { Container } from '@/components/layout/container';
 import { Section, SectionHeader } from '@/components/layout/section';
 import { ContentPlaceholder } from '@/components/layout/content-placeholder';
 import { CtaBand } from '@/components/layout/cta-band';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { OptimizedImage } from '@/components/common/optimized-image';
 import { ContentFallbackNotice } from '@/components/common/content-fallback-notice';
 import { SiteSectionContent, SiteCtaLink } from '@/components/cms/site-section-block';
@@ -14,6 +15,7 @@ import { resolveSeoMetadata } from '@/lib/seo/resolver';
 import { siteConfig } from '@/config/site';
 import { getCmsPageSeo, getSiteSections } from '@/lib/site';
 import { getCategories, isDemoSource } from '@/lib/products';
+import type { ProductCategory } from '@/lib/products/types';
 import { LocaleLink } from '@/i18n/link';
 import { getI18n } from '@/i18n';
 import { defaultLocale, isLocale, type Locale } from '@/i18n/config';
@@ -39,6 +41,53 @@ interface HomePageProps {
 
 function resolveLocale(rawLocale: string): Locale {
   return isLocale(rawLocale) ? rawLocale : defaultLocale;
+}
+
+/**
+ * 首页「产品分类」卡片。
+ *
+ * 描述来自 CMS（单语言英文，各分类长短不一），所以 CTA 用 `mt-auto` 贴卡片底部：
+ * 同一行卡片等高时按钮自然对齐，不会随描述行数上下浮动。
+ *
+ * CTA 是右下角的下划线文字链（无边框、无底色），文案随界面语言切换：
+ * 中文「点此查看相关产品」/ 英文 "View related products"，不混排双语。
+ */
+function CategoryCard({
+  category,
+  locale,
+  cta,
+}: {
+  category: ProductCategory;
+  locale: Locale;
+  cta: string;
+}) {
+  const href = `/products?category=${encodeURIComponent(category.slug)}`;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>
+          <LocaleLink locale={locale} href={href} className="transition-colors hover:text-primary">
+            {category.name}
+          </LocaleLink>
+        </CardTitle>
+        {category.description ? <CardDescription>{category.description}</CardDescription> : null}
+      </CardHeader>
+      <CardFooter className="mt-auto justify-end">
+        <LocaleLink
+          locale={locale}
+          href={href}
+          className="group inline-flex items-center gap-1.5 text-small font-medium text-primary underline decoration-1 underline-offset-4 transition-colors hover:text-primary-hover"
+        >
+          {cta}
+          <ArrowRight
+            aria-hidden="true"
+            className="size-3.5 shrink-0 transition-transform group-hover:translate-x-0.5"
+          />
+        </LocaleLink>
+      </CardFooter>
+    </Card>
+  );
 }
 
 export async function generateMetadata({ params }: HomePageProps): Promise<Metadata> {
@@ -97,12 +146,43 @@ export default async function HomePage({ params }: HomePageProps) {
   // 产品分类：仅 api 模式拉取真实目录；demo 模式保持占位卡片
   const categories = isDemoSource() ? [] : await getCategories();
 
+  /**
+   * 只有「有已发布产品」的分类才允许出现在首页。
+   *
+   * 后端 /categories 的 productCount 就是**已发布（PUBLISHED）**产品数，
+   * 因此 productCount === 0 意味着访客点进去只会看到空列表——这种分类
+   * 宁可不在首页露出（分类本身仍可在后台维护，产品上架后自动出现）。
+   */
+  const categoriesWithProducts = categories.filter((category) => (category.productCount ?? 0) > 0);
+
   return (
     <>
       {/* 首页 WebSite 结构化数据（Organization 由根布局输出） */}
       <WebSiteSchema locale={locale} />
       {/* Hero */}
-      <section className="border-b border-border bg-surface">
+      <section className="relative isolate overflow-hidden border-b border-border bg-surface">
+        {/*
+          背景：森林实拍图（原图 1920×400 全景，已裁成 3:1 横幅；移动端换 1.6:1 裁切，
+          避免竖屏下把横幅图放大过头）。两个断点各用一张，靠 bg-cover 自适应。
+        */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 -z-10 bg-cover bg-center md:hidden"
+          style={{ backgroundImage: "url('/images/hero-forest-mobile.webp')" }}
+        />
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 -z-10 hidden bg-cover bg-center md:block"
+          style={{ backgroundImage: "url('/images/hero-forest.webp')" }}
+        />
+        {/*
+          可读性遮罩：左侧几乎实色（承载深色标题与正文），向右逐渐透出画面。
+          没有这层遮罩，深色文字压在树影上会读不清。
+        */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 -z-10 bg-linear-to-r from-surface from-40% via-surface/85 via-55% to-surface/55 md:from-45% md:via-surface/60 md:via-72% md:to-transparent"
+        />
         <Container className="py-16 sm:py-20 lg:py-28">
           {heroSection ? (
             /* CMS 模式：结构化 hero 分区（业务内容，单语言） */
@@ -225,17 +305,15 @@ export default async function HomePage({ params }: HomePageProps) {
         {productsSection ? (
           <>
             <SiteSectionContent section={productsSection} locale={locale} />
-            {categories.length > 0 ? (
+            {categoriesWithProducts.length > 0 ? (
               <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {categories.map((category) => (
-                  <Card key={category.id ?? category.slug}>
-                    <CardHeader>
-                      <CardTitle>{category.name}</CardTitle>
-                      {category.description ? (
-                        <CardDescription>{category.description}</CardDescription>
-                      ) : null}
-                    </CardHeader>
-                  </Card>
+                {categoriesWithProducts.map((category) => (
+                  <CategoryCard
+                    key={category.id ?? category.slug}
+                    category={category}
+                    locale={locale}
+                    cta={m.home.categoryCta}
+                  />
                 ))}
               </div>
             ) : null}
@@ -254,27 +332,17 @@ export default async function HomePage({ params }: HomePageProps) {
                 </Button>
               }
             />
-            {/* 有真实分类就展示分类入口；否则仅在 demo 数据源下显示占位卡片 */}
-            {categories.length > 0 ? (
+            {/* 有真实分类（且含已发布产品）就展示分类入口；否则仅在 demo 数据源下显示占位卡片 */}
+            {categoriesWithProducts.length > 0 ? (
               <>
                 <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                  {categories.map((category) => (
-                    <Card key={category.id ?? category.slug}>
-                      <CardHeader>
-                        <CardTitle>
-                          <LocaleLink
-                            locale={locale}
-                            href={`/products?category=${encodeURIComponent(category.slug)}`}
-                            className="transition-colors hover:text-primary"
-                          >
-                            {category.name}
-                          </LocaleLink>
-                        </CardTitle>
-                        {category.description ? (
-                          <CardDescription>{category.description}</CardDescription>
-                        ) : null}
-                      </CardHeader>
-                    </Card>
+                  {categoriesWithProducts.map((category) => (
+                    <CategoryCard
+                      key={category.id ?? category.slug}
+                      category={category}
+                      locale={locale}
+                      cta={m.home.categoryCta}
+                    />
                   ))}
                 </div>
                 <ContentFallbackNotice locale={locale} variant="subtle" className="mt-4" />

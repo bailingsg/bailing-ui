@@ -61,7 +61,14 @@ for (const hostname of ['localhost', '127.0.0.1']) {
   addPattern({ protocol: 'http', hostname, pathname: '/uploads/**' });
 }
 
+/**
+ * 并行会话隔离：另一会话可能正在操作 .next（build / start 互相 EPERM）。
+ * 通过 UI_DIST_DIR 环境变量支持临时切换构建目录（验收时用独立目录，用后即弃）。
+ */
+const distDir = process.env.UI_DIST_DIR ?? '.next';
+
 const nextConfig: NextConfig = {
+  distDir,
   images: {
     // 未登记的远程图片会直接报错——这正是我们想要的：宁可显式登记，也不静默降级
     remotePatterns,

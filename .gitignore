@@ -28,3 +28,8 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+
+# 临时构建目录（并行会话隔离/验收用，不入库）
+.next-old-*/
+.next-visitor/
+.next-*/

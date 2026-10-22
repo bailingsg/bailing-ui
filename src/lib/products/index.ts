@@ -4,12 +4,16 @@
  * 页面统一从 `@/lib/products` 引入，不直接引用 demo-data / repository 内部实现。
  */
 export * from './types';
+export * from './paths';
 export {
   getCategories,
+  getProductById,
   getProductBySlug,
   getProducts,
-  getProductSlugs,
+  getProductIds,
+  getProductSlugIds,
   getProductsSource,
   isDemoSource,
   type ProductsSource,
+  type ProductSlugId,
 } from './repository';

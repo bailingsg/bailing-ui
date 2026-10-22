@@ -169,7 +169,17 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     return NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } });
   }
 
-  return NextResponse.next({ request: { headers: requestHeaders } });
+  // 带语言前缀的路径（/zh-CN/...）：**同路径 rewrite** 而非直接放行。
+  //
+  // 原因（2026-10-19 实测 500）：直接 `NextResponse.next()` 放行时，
+  // ISR 动态参数路由（如 /zh-CN/products/[slugId]）在运行时回退生成会连
+  // not-found 外壳一起以「静态生成」模式渲染；not-found.tsx 里的
+  // `await headers()` 触发 DynamicServerError（"Page changed from static
+  // to dynamic at runtime, reason: headers"）→ 整个详情页 500。
+  // 英文路径因走 rewrite 强制进入 request 渲染模式而从未受影响。
+  // 同路径 rewrite 不改变 URL（对 SEO / canonical 零影响），
+  // 但让渲染与英文路径完全同模式（request 模式，headers() 可用）。
+  return NextResponse.rewrite(request.nextUrl, { request: { headers: requestHeaders } });
 }
 
 export const config = {

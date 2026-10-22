@@ -3,9 +3,12 @@ import { getI18n } from '@/i18n';
 import { defaultLocale, type Locale } from '@/i18n/config';
 
 /**
- * RfqSuccess —— 询盘提交成功状态
+ * RfqSuccess —— 询盘提交成功的轻量内联提示
  *
- * 文案随界面语言切换（英文 / 中文），语义与需求一致：
+ * 设计：按用户要求"去掉弹窗，只保留发送成功的提示"，
+ * 由表单组件内联在提交按钮上方展示，不再替换整个表单。
+ *
+ * 文案随界面语言切换（英文 / 中文）。
  *   "Thank you for your inquiry. Our team will contact you soon."
  */
 export interface RfqSuccessProps {
@@ -24,36 +27,18 @@ export function RfqSuccess({ reference, onReset, locale = defaultLocale }: RfqSu
     <div
       role="status"
       aria-live="polite"
-      className="flex flex-col items-start gap-4 rounded-lg border border-border-brand bg-surface-brand px-6 py-8"
+      className="flex flex-col items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-4 py-3 text-center"
     >
-      <span
-        aria-hidden="true"
-        className="flex size-11 items-center justify-center rounded-full bg-primary text-primary-foreground"
-      >
-        <svg viewBox="0 0 24 24" fill="none" className="size-5">
-          <path
-            d="M5 12.5l4.5 4.5L19 7.5"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </span>
-
-      <div className="flex flex-col gap-1">
-        <h3 className="text-heading-sm">{t('rfq.successTitle')}</h3>
-        <p className="text-body text-text-secondary">{t('rfq.successText')}</p>
-      </div>
-
+      <p className="text-body font-medium text-primary">
+        {t('rfq.successTitle')} {t('rfq.successText')}
+      </p>
       {reference ? (
-        <p className="text-caption text-text-muted">
+        <p className="text-caption text-text-secondary">
           {t('rfq.successReference', { reference })}
         </p>
       ) : null}
-
       {onReset ? (
-        <Button type="button" variant="outline" onClick={onReset}>
+        <Button type="button" variant="outline" size="sm" onClick={onReset} className="mt-1">
           {t('rfq.sendAnother')}
         </Button>
       ) : null}

@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next';
 import { siteConfig, sitemapRoutes, siteUrl } from '@/config/site';
 import { apiGet, isApiSource } from '@/lib/cms-api';
 import { CmsRevalidate, CmsTags } from '@/lib/cms-tags';
-import { getProductSlugs } from '@/lib/products';
+import { getProductSlugIds, productDetailPath } from '@/lib/products';
 import { getBlogSlugs } from '@/lib/blog';
 import { getApplicationSlugs } from '@/lib/applications';
 import { defaultLocale, locales, type Locale } from '@/i18n/config';
@@ -134,14 +134,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }),
   );
 
-  const [productSlugs, blogSlugs, applicationSlugs] = await Promise.all([
-    getProductSlugs(),
+  const [productSlugIds, blogSlugs, applicationSlugs] = await Promise.all([
+    getProductSlugIds(),
     getBlogSlugs(),
     getApplicationSlugs(),
   ]);
 
-  const productEntries: SitemapEntry[] = productSlugs.flatMap((slug) =>
-    expandLocalized(`/products/${slug}`, {
+  const productEntries: SitemapEntry[] = productSlugIds.flatMap((item) =>
+    expandLocalized(productDetailPath(item), {
       lastModified,
       changeFrequency: 'weekly',
       priority: 0.7,

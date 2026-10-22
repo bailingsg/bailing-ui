@@ -196,7 +196,26 @@ export const footerColumns: FooterColumn[] = [
 export const contactInfo = {
   email: '',
   phone: '',
-  address: '',
+  /** 地址（中文写法）：寿光文家潍高路与西环路交界处 */
+  address: '寿光文家潍高路与西环路交界处',
+  /** 地址（英文写法）：供英文界面与 Google 地图检索使用 */
+  addressEn: 'The Cross Of Weigao And Xihuan Road, Shouguang City, Shandong Province, China',
+  /**
+   * 地图检索词：一律用「名称 / 地址文本」而不是自存坐标 ——
+   * 国内常见 GCJ-02 / WGS-84 偏差，写死坐标反而容易偏出几百米。
+   *
+   * 两个通道各用各的策略：
+   *   · mapQuery   → Google Maps：公司名 + 地址。Google 认不出这家小厂时
+   *                  会忽略公司名、退化成地址检索，仍能落到路口（不会跑空）。
+   *   · mapQueryZh → 高德：直接搜公司名 POI，能命中就直接钉在公司上。
+   * 若要精确到厂门口，把 mapQuery 换成 `纬度,经度`（WGS-84）、
+   * mapQueryZh 换成 GCJ-02 坐标即可（两套坐标系不能混用）。
+   */
+  mapQuery:
+    'Bailing Wooden Co., Ltd., Weigao Road & Xihuan Road, Shouguang City, Shandong Province, China',
+  mapQueryZh: '百灵木业有限公司',
+  /** Google Maps Embed API Key（可留空：留空走免 Key 的 output=embed 通道，见 location-map.tsx） */
+  mapEmbedKey: '',
 } as const;
 
 /** 资质证书（名称待业务方确认） */

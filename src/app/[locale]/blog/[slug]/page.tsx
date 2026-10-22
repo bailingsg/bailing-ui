@@ -25,7 +25,7 @@ import {
   getBlogSlugs,
   getRelatedBlogPosts,
 } from '@/lib/blog';
-import { getProductBySlug, type ProductListItem } from '@/lib/products';
+import { getProductBySlug, productDetailPath, type ProductListItem } from '@/lib/products';
 
 /**
  * 文章详情 /blog/[slug]（中文：/zh-CN/blog/[slug]）
@@ -283,7 +283,7 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
                     ? [{ label: product.category.name, variant: 'application' as const }]
                     : []
                 }
-                href={`/products/${product.slug}`}
+                href={productDetailPath(product)}
               />
             ))}
           </div>

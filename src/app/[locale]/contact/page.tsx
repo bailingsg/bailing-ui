@@ -4,14 +4,16 @@ import { Section, SectionHeader } from '@/components/layout/section';
 import { ContentPlaceholder } from '@/components/layout/content-placeholder';
 import { CtaBand } from '@/components/layout/cta-band';
 import { RfqForm } from '@/components/rfq/rfq-form';
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { DirectRfqDialog } from '@/components/contacts/direct-rfq-dialog';
+import { LocationMap } from '@/components/location-map';
+import { Card, CardDescription, CardTitle } from '@/components/ui/card';
 import { resolveSeoMetadata } from '@/lib/seo/resolver';
 import { toWhatsAppUrl } from '@/lib/format';
-import { getProductBySlug } from '@/lib/products';
+import { getProductById, getProductBySlug } from '@/lib/products';
 import { getCmsPageSeo, getSiteSections } from '@/lib/site';
 import { getPublicContacts } from '@/lib/contacts';
 import type { RfqProductRef } from '@/lib/rfq';
-import { contactInfo, siteConfig } from '@/config/site';
+import { contactInfo } from '@/config/site';
 import { FaqPageSchema } from '@/components/seo/faq-schema';
 import { ContentFallbackNotice } from '@/components/common/content-fallback-notice';
 import { getI18n } from '@/i18n';
@@ -21,7 +23,10 @@ import { localizedPath } from '@/i18n/paths';
 /**
  * 联系我们 /contact（中文：/zh-CN/contact）
  *
- * 结构：Contact Information → RFQ Form（#rfq）→ FAQ（#faq）→ Location → CTA
+ * 结构：RFQ Form（#rfq）→ Sales Contacts → FAQ（#faq）→ Location → CTA
+ *
+ * 询盘表单优先展示（访客进页面即可直接填写）；原顶部的 Email / Phone / Address
+ * 三张渠道卡片已移除（取值长期为占位文案，与 Sales Contacts 信息重复）。
  *
  * 询盘表单为真实提交（POST /api/v1/rfq）；产品详情页的 Request Quote 会带上
  * `?product={slug}#rfq`，此处自动识别并显示 "Interested Product"。
@@ -69,15 +74,16 @@ export async function generateMetadata({ params }: ContactPageProps): Promise<Me
 }
 
 /**
- * 解析 `/contact?product={slug}` 带入的产品。
+ * 解析 `/contact?product={id|slug}` 带入的产品。
  *
+ * 产品详情页以 **id** 拼接链接；旧链接（slug）仍兼容回落。
  * 必须容错：产品源为 `api` 且后端不可用时不能让整个 Contact 页崩溃，
  * 因此任何异常都降级为「无关联产品」，询盘仍可正常提交。
  */
-async function resolveProductRef(slug: string | undefined): Promise<RfqProductRef | null> {
-  if (!slug) return null;
+async function resolveProductRef(ref: string | undefined): Promise<RfqProductRef | null> {
+  if (!ref) return null;
   try {
-    const product = await getProductBySlug(slug);
+    const product = (await getProductById(ref)) ?? (await getProductBySlug(ref));
     if (!product) return null;
     return { id: product.id, name: product.name, slug: product.slug };
   } catch {
@@ -104,20 +110,16 @@ export default async function ContactPage({ params, searchParams }: ContactPageP
     ? sections.find((section) => section.sectionKey === 'contact.hero') ?? null
     : null;
 
-  /** 联系渠道（标题 / 说明本地化，取值来自站点配置，未确认前显示占位文案） */
-  const channels: { title: string; value: string; hint: string }[] = [
-    { title: m.contact.channelEmail, value: contactInfo.email, hint: m.contact.channelEmailHint },
-    { title: m.contact.channelPhone, value: contactInfo.phone, hint: m.contact.channelPhoneHint },
-    {
-      title: m.contact.channelAddress,
-      value: contactInfo.address,
-      hint: m.contact.channelAddressHint,
-    },
-  ];
-
   /** FAQ（流程性问答，不涉及虚构的商务条款）；与 FAQPage 结构化数据一致 */
   const faqs = Object.values(m.contact.faq);
   const nextSteps = Object.values(m.contact.nextSteps);
+
+  /**
+   * 地图与地址文案：中文写法与英文写法**并列展示**（不是翻译，是同一地点的两种写法）。
+   * 当前语言写法在前，另一种语言作为次要说明在后 —— 国内外访客都能核对，
+   * 也方便司机/货代直接用自己熟悉的语言导航。
+   */
+  const primaryAddress = isDefaultLocale ? contactInfo.addressEn : contactInfo.address;
 
   return (
     <>
@@ -134,78 +136,8 @@ export default async function ContactPage({ params, searchParams }: ContactPageP
         description={heroSection?.subtitle ?? heroSection?.body ?? m.contact.description}
       />
 
-      {/* 1. Contact Information */}
-      <Section size="sm">
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-          {channels.map((channel) => (
-            <Card key={channel.title}>
-              <CardHeader>
-                <CardTitle>{channel.title}</CardTitle>
-                <CardDescription>
-                  <span className={channel.value ? 'text-foreground' : 'text-text-muted'}>
-                    {channel.value ||
-                      (isDefaultLocale ? siteConfig.placeholderText : siteConfig.placeholderTextZh)}
-                  </span>
-                </CardDescription>
-                <p className="text-caption text-text-muted">{channel.hint}</p>
-              </CardHeader>
-            </Card>
-          ))}
-        </div>
-
-        {/* 员工联系方式（CMS 已公开展示的记录；未配置时不渲染） */}
-        {publicContacts.length > 0 ? (
-          <div className="mt-10">
-            <SectionHeader
-              eyebrow={m.contact.contactsEyebrow}
-              title={m.contact.contactsTitle}
-              description={m.contact.contactsDescription}
-            />
-            <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {publicContacts.map((contact) => (
-                <Card key={`${contact.displayName}-${contact.sortOrder}`}>
-                  <CardHeader>
-                    <CardTitle>{contact.displayName}</CardTitle>
-                    <CardDescription>{contact.jobTitle}</CardDescription>
-                  </CardHeader>
-                  <div className="flex flex-col gap-1 px-6 pb-6 text-small text-text-secondary">
-                    {contact.displayEmail ? (
-                      <a
-                        href={`mailto:${contact.displayEmail}`}
-                        className="text-primary underline underline-offset-4 transition-colors hover:text-primary-hover"
-                      >
-                        {contact.displayEmail}
-                      </a>
-                    ) : null}
-                    {(() => {
-                      // 号码统一规范化为 https://wa.me/<国际号码>；
-                      // 无法规范化时回退纯文本（绝不产出非法 wa.me 链接）
-                      const waUrl = toWhatsAppUrl(contact.whatsapp);
-                      if (!contact.whatsapp) return null;
-                      return waUrl ? (
-                        <a
-                          href={waUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary underline underline-offset-4 transition-colors hover:text-primary-hover"
-                        >
-                          WhatsApp
-                        </a>
-                      ) : (
-                        <span>WhatsApp: {contact.whatsapp}</span>
-                      );
-                    })()}
-                  </div>
-                </Card>
-              ))}
-            </div>
-            <ContentFallbackNotice locale={locale} variant="subtle" />
-          </div>
-        ) : null}
-      </Section>
-
-      {/* 2. RFQ Form */}
-      <Section id="rfq" tone="surface">
+      {/* 1. RFQ Form（询盘表单前置：访客进页面即可直接填写） */}
+      <Section id="rfq">
         <SectionHeader
           eyebrow={m.contact.rfqEyebrow}
           title={m.contact.rfqTitle}
@@ -235,6 +167,80 @@ export default async function ContactPage({ params, searchParams }: ContactPageP
         </div>
       </Section>
 
+      {/* 2. Sales Contacts（CMS 已公开展示的记录；未配置时不渲染） */}
+      {publicContacts.length > 0 ? (
+        <Section tone="surface">
+          <SectionHeader
+            eyebrow={m.contact.contactsEyebrow}
+            title={m.contact.contactsTitle}
+            description={m.contact.contactsDescription}
+          />
+          <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {publicContacts.map((contact) => (
+              <Card
+                key={`${contact.displayName}-${contact.sortOrder}`}
+                className="relative overflow-hidden p-5 sm:p-6"
+              >
+                {/* 左：姓名 + 职位 + 联系方式。右侧留出 pr-40 给头像占位 */}
+                <div className="flex min-w-0 flex-1 flex-col gap-5 pr-40">
+                  <CardTitle>{contact.displayName}</CardTitle>
+                  <CardDescription>{contact.jobTitle}</CardDescription>
+                  {/* 销售邮箱不再走 mailto：改为打开「发送给某销售」站内信箱弹窗
+                      （表单提交带 directEmail，直达本人且不占用询盘轮转顺位） */}
+                  <DirectRfqDialog contact={contact} locale={locale} />
+                  {(() => {
+                    // 号码统一规范化为 https://wa.me/<国际号码>；
+                    // 无法规范化时回退纯文本（绝不产出非法 wa.me 链接）
+                    const waUrl = toWhatsAppUrl(contact.whatsapp);
+                    if (!contact.whatsapp) return null;
+                    return waUrl ? (
+                      <a
+                        href={waUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary underline underline-offset-4 transition-colors hover:text-primary-hover"
+                      >
+                        WhatsApp
+                      </a>
+                    ) : (
+                      <span>WhatsApp: {contact.whatsapp}</span>
+                    );
+                  })()}
+                  {contact.phone ? (
+                    <a
+                      href={`tel:${contact.phone}`}
+                      className="text-primary underline underline-offset-4 transition-colors hover:text-primary-hover"
+                    >
+                      {contact.phone}
+                    </a>
+                  ) : null}
+                </div>
+
+                {/* 右：头像。纵向贴满整张卡片（inset-y-0），右侧与卡片右边界齐平，
+                    由 Card 自带 overflow-hidden 保证不溢出。
+                    不再加羽化遮罩——头像自然延伸至卡片右半区，与左侧文字互不干扰。
+                    头像区左侧为卡片内部接缝，四角必须保持直角（不加 rounded-l-*），
+                    否则会在卡片内壁露出一圈圆角，与卡片外框错位。 */}
+                {contact.avatarUrl ? (
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-y-0 right-0 w-36 overflow-hidden border border-r-0 border-border bg-surface"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element -- 前台员工头像走动态图床 URL，无需 next/image 优化 */}
+                    <img
+                      src={contact.avatarUrl}
+                      alt={contact.displayName}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                ) : null}
+              </Card>
+            ))}
+          </div>
+          <ContentFallbackNotice locale={locale} variant="subtle" className="mt-6" />
+        </Section>
+      ) : null}
+
       {/* 3. FAQ */}
       <Section id="faq">
         <SectionHeader
@@ -260,7 +266,7 @@ export default async function ContactPage({ params, searchParams }: ContactPageP
         </div>
       </Section>
 
-      {/* 4. Company Location（占位） */}
+      {/* 4. Company Location */}
       <Section tone="surface">
         <SectionHeader
           eyebrow={m.contact.locationEyebrow}
@@ -268,12 +274,27 @@ export default async function ContactPage({ params, searchParams }: ContactPageP
           description={m.contact.locationDescription}
         />
         <div className="mt-8">
-          <ContentPlaceholder
-            locale={locale}
-            title={m.contact.locationPlaceholderTitle}
-            note={m.contact.locationPlaceholderNote}
-            minHeightClass="min-h-64"
-          />
+          {contactInfo.mapQuery ? (
+            /* Google Maps Embed（免费无限量）+ 高德备用链接；见 location-map.tsx 头部说明 */
+            <LocationMap
+              query={contactInfo.mapQuery}
+              embedKey={contactInfo.mapEmbedKey || undefined}
+              address={primaryAddress}
+              loadLabel={m.contact.locationMapLoad}
+              hintLabel={m.contact.locationMapHint}
+              amapHref={`https://uri.amap.com/search?keyword=${encodeURIComponent(contactInfo.mapQueryZh)}&city=370700`}
+              amapLabel={m.contact.locationMapAmap}
+              largerMapHref={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(contactInfo.mapQuery)}`}
+              largerMapLabel={m.contact.locationMapLarger}
+            />
+          ) : (
+            <ContentPlaceholder
+              locale={locale}
+              title={m.contact.locationPlaceholderTitle}
+              note={m.contact.locationPlaceholderNote}
+              minHeightClass="min-h-64"
+            />
+          )}
         </div>
       </Section>
 

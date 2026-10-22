@@ -10,7 +10,7 @@ import { DemoDataNotice } from '@/components/products/demo-data-notice';
 import { ContentFallbackNotice } from '@/components/common/content-fallback-notice';
 import { Badge } from '@/components/ui/badge';
 import { resolveSeoMetadata } from '@/lib/seo/resolver';
-import { getCategories, getProducts, isDemoSource, type ProductListItem } from '@/lib/products';
+import { getCategories, getProducts, isDemoSource, productDetailPath, type ProductListItem } from '@/lib/products';
 import { getI18n } from '@/i18n';
 import { defaultLocale, isLocale, type Locale } from '@/i18n/config';
 
@@ -72,6 +72,15 @@ export default async function ProductsPage({ params, searchParams }: ProductsPag
     getProducts({ category, page, pageSize: PAGE_SIZE }),
   ]);
 
+  /**
+   * 筛选器只列「有已发布产品」的分类（与首页分类卡片同一口径）。
+   *
+   * 后端 productCount 即已发布产品数，为 0 的分类点进去只会得到空列表，
+   * 因此不放进筛选器；但 `?category=` 直链仍按**全量**分类解析——
+   * 老链接 / 已收藏链接依然得到"该分类暂无产品"的明确空态，而不是 404。
+   */
+  const filterCategories = categories.filter((item) => (item.productCount ?? 0) > 0);
+
   const activeCategory = categories.find((item) => item.slug === category);
   const showDemoNotice = isDemoSource();
 
@@ -94,7 +103,7 @@ export default async function ProductsPage({ params, searchParams }: ProductsPag
       <Section size="sm" tone="surface">
         <div className="flex flex-col gap-4">
           {showDemoNotice ? <DemoDataNotice locale={locale} /> : null}
-          <ProductFilter categories={categories} activeSlug={category} locale={locale} />
+          <ProductFilter categories={filterCategories} activeSlug={category} locale={locale} />
         </div>
       </Section>
 
@@ -133,7 +142,7 @@ export default async function ProductsPage({ params, searchParams }: ProductsPag
                       ? [{ label: product.material, variant: 'material' as const }]
                       : []),
                   ]}
-                  href={`/products/${product.slug}`}
+                  href={productDetailPath(product)}
                 />
               ))}
             </div>

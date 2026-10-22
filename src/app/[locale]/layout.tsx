@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { Suspense } from 'react';
 import type { ReactNode } from 'react';
 import { notFound } from 'next/navigation';
 import { Inter } from 'next/font/google';
@@ -13,6 +14,7 @@ import { brandPalette } from '@/tokens';
 import { defaultLocale, isLocale, localeMeta, locales } from '@/i18n/config';
 import { getI18n } from '@/i18n';
 import { localizedPath } from '@/i18n/paths';
+import { VisitorTracking } from '@/visitor/visitor-tracking';
 
 /**
  * 字体：Inter（拉丁字符，自托管于构建产物）
@@ -141,6 +143,10 @@ export default async function LocaleLayout({
           {children}
         </main>
         <Footer items={footerNav} locale={locale} />
+        {/* 访客统计埋点（匿名旁路上报，全站仅此一处；失败静默不影响页面） */}
+        <Suspense fallback={null}>
+          <VisitorTracking />
+        </Suspense>
         {/* 全站 Organization 结构化数据（仅输出已确认信息） */}
         <OrganizationSchema settings={seoSettings} locale={locale} />
       </body>

@@ -180,8 +180,8 @@ function isBrandCompleteTitle(title: string, siteName: string): boolean {
  * 统一 metadata 解析（Manual → Content → Global → System）。
  *
  * 页面用法：
- *   const product = await getProductBySlug(slug);
- *   return resolveSeoMetadata({ path: `/products/${slug}`, title: product.name, ... });
+ *   const product = await getProductById(id);
+ *   return resolveSeoMetadata({ path: productDetailPath(product), title: product.name, ... });
  */
 export async function resolveSeoMetadata(input: ResolveSeoInput): Promise<Metadata> {
   const locale = input.locale ?? defaultLocale;

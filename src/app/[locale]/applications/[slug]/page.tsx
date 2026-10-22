@@ -17,7 +17,7 @@ import { getI18n } from '@/i18n';
 import { defaultLocale, isLocale, type Locale } from '@/i18n/config';
 import { localizedPath } from '@/i18n/paths';
 import { getApplicationBySlug, getApplicationSlugs } from '@/lib/applications';
-import { getProductBySlug, type ProductListItem } from '@/lib/products';
+import { getProductBySlug, productDetailPath, type ProductListItem } from '@/lib/products';
 
 /**
  * 应用场景详情 /applications/[slug]（中文：/zh-CN/applications/[slug]）
@@ -272,7 +272,7 @@ export default async function ApplicationDetailPage({ params }: ApplicationDetai
                     ? [{ label: product.category.name, variant: 'application' as const }]
                     : []
                 }
-                href={`/products/${product.slug}`}
+                href={productDetailPath(product)}
                 ctaLabel={t('common.viewDetails')}
               />
             ))}
