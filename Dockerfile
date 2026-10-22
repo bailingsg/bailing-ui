@@ -40,7 +40,19 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev && npm cache clean --force
+# typescript 只声明在 devDependencies，--omit=dev 之后运行时不带它；而
+# next.config.ts 是 TS 文件，`next start` 启动时要加载它 → Next 会退而在
+# 容器内现场 `npm install typescript`，把新容器首启拖到 4~5 分钟（期间
+# nginx 一直 502）。在构建期预装，容器启动即就绪。
+# 注意：不能直接 `npm install --no-save typescript`——它已在 package.json 的
+# devDependencies 里，NODE_ENV=production 下会被 --omit=dev 判定为「已忽略」，
+# 只输出 `up to date` 而什么都不装。故装到独立前缀再拷进 node_modules。
+RUN npm ci --omit=dev \
+ && mkdir -p /tmp/ts \
+ && npm install --no-audit --no-fund --prefix /tmp/ts typescript@5.8.2 \
+ && cp -r /tmp/ts/node_modules/typescript /app/node_modules/typescript \
+ && rm -rf /tmp/ts \
+ && npm cache clean --force
 # next start needs: .next, public, next.config.*, package.json, node_modules
 COPY --from=build /app/.next ./.next
 COPY --from=build /app/public ./public
