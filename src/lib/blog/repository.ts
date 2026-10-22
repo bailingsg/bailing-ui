@@ -1,6 +1,7 @@
 import { blogCategories, blogPosts } from './demo-data';
 import { apiGet, isApiSource, isNotFound, qs } from '@/lib/cms-api';
 import { CmsRevalidate, CmsTags } from '@/lib/cms-tags';
+import { cleanExcerpt } from './excerpt';
 import type {
   BlogCategoryInfo,
   BlogCategorySlug,
@@ -42,6 +43,11 @@ interface ApiBlogSummary {
 
 interface ApiBlogDetail extends ApiBlogSummary {
   contentHtml: string;
+  /**
+   * 关联产品 slug 列表（Phase 5.6，后台「文章编辑」里最多选 4 个）。
+   * 后端只下发已发布产品；旧版后端无该字段时按空数组处理。
+   */
+  relatedProducts?: string[];
 }
 
 interface ApiBlogPage {
@@ -57,7 +63,8 @@ function toSummaryFromApi(apiPost: ApiBlogSummary): BlogPostSummary {
   return {
     slug: apiPost.slug,
     title: apiPost.title,
-    excerpt: apiPost.excerpt ?? '',
+    // 展示层规范化：解码实体 / 去 WP 截断标记（详情页另有正文回退，见 getBlogPostBySlug）
+    excerpt: cleanExcerpt(apiPost.excerpt),
     coverImage: apiPost.coverImageUrl,
     coverImageAlt: apiPost.coverImageAlt ?? '',
     category: apiPost.category?.slug ?? 'uncategorized',
@@ -86,7 +93,7 @@ function toSummaryFromApi(apiPost: ApiBlogSummary): BlogPostSummary {
  */
 
 /** 列表页每页文章数（桌面 3 列 × 2 行） */
-export const BLOG_PAGE_SIZE = 6;
+export const BLOG_PAGE_SIZE = 9;
 
 /** 分类信息（含文章数量，用于筛选器展示） */
 export interface BlogCategoryWithCount extends BlogCategoryInfo {
@@ -98,7 +105,7 @@ function toSummary(post: BlogPost): BlogPostSummary {
   return {
     slug: post.slug,
     title: post.title,
-    excerpt: post.excerpt,
+    excerpt: cleanExcerpt(post.excerpt, post.contentHtml),
     coverImage: post.coverImage,
     coverImageAlt: post.coverImageAlt,
     category: post.category,
@@ -161,7 +168,8 @@ export async function getBlogPostBySlug(slug: string): Promise<BlogPost | null> 
       return {
         slug: detail.slug,
         title: detail.title,
-        excerpt: detail.excerpt ?? '',
+        // 自动截断摘要（WP [&hellip;]）→ 回退正文首段重新生成；人工摘要仅解码
+        excerpt: cleanExcerpt(detail.excerpt, detail.contentHtml),
         content: [],
         contentHtml: detail.contentHtml,
         coverImage: detail.coverImageUrl,
@@ -171,10 +179,11 @@ export async function getBlogPostBySlug(slug: string): Promise<BlogPost | null> 
         ...(detail.updatedAt ? { updatedAt: detail.updatedAt } : {}),
         readingMinutes: detail.readingMinutes,
         tags: detail.tags.map((tag) => tag.name),
-        relatedProducts: [],
+        // Phase 5.6：后台配置的关联产品（slug），由详情页 resolveProducts 解析后渲染卡片
+        relatedProducts: detail.relatedProducts ?? [],
         seo: {
           title: detail.seoTitle ?? detail.title,
-          description: detail.seoDescription ?? detail.excerpt ?? '',
+          description: detail.seoDescription ?? cleanExcerpt(detail.excerpt, detail.contentHtml),
         },
       };
     } catch (error) {

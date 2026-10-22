@@ -17,6 +17,7 @@ import type {
  * 数据源（Phase 4.7 起统一到 NEXT_PUBLIC_CMS_SOURCE）：
  *   · demo（默认）—— 仓库内登记的企业实景素材（当前为空数组，渲染占位）
  *   · api —— bailing-backend 公开只读接口 /api/v1/public/factory
+ *     （Phase 5.6 起另聚合媒体库按用途分类的图片 /api/v1/public/media）
  *
  * 设计原则：
  *   · 全部函数为 async —— 替换远端数据源不改调用方签名；
@@ -121,11 +122,17 @@ async function fetchApiImages(): Promise<FactoryImage[]> {
   );
 
   const images: FactoryImage[] = [];
+  const seenUrls = new Set<string>();
+  const push = (image: FactoryImage): void => {
+    if (!image.url || seenUrls.has(image.url)) return;
+    seenUrls.add(image.url);
+    images.push(image);
+  };
+
   for (const detail of details) {
     const category = SECTION_TYPE_TO_CATEGORY[detail.sectionType] ?? 'factory';
     detail.gallery.forEach((image, index) => {
-      if (!image.url) return; // 无媒体关联的图不出现在公开响应中，防御性跳过
-      images.push({
+      push({
         id: `${detail.slug}-gallery-${index}`,
         url: image.url,
         alt: image.altText ?? detail.title,
@@ -137,8 +144,7 @@ async function fetchApiImages(): Promise<FactoryImage[]> {
     // 展会照片：caption 带展会名（真实展会记录，非虚构）
     detail.exhibitions.forEach((exhibition) => {
       exhibition.photos.forEach((image, index) => {
-        if (!image.url) return;
-        images.push({
+        push({
           id: `${detail.slug}-exhibition-${exhibition.name}-${index}`,
           url: image.url,
           alt: image.altText ?? exhibition.name,
@@ -150,7 +156,73 @@ async function fetchApiImages(): Promise<FactoryImage[]> {
     });
   }
 
+  // 媒体库按用途自动聚合的图（Phase 5.6）：排在分区登记图之后，
+  // 已登记过的同一 URL 不重复出现（去重在 push 内完成）。
+  const mediaImages = await fetchApiMediaImages();
+  mediaImages.forEach(push);
+
   return sortImages(images);
+}
+
+/* ---------------------------------------------------------------------------
+ * 媒体库按用途自动聚合（Phase 5.6）
+ *
+ * 后台媒体库上传时选了「工厂 / 生产 / 装车 / 展会」等用途，前台工厂页
+ * 无需在业务表里重复登记即可自动取到——媒体库里改用途即改页面图集。
+ *
+ * 用途 → 页面图片分类的映射（MediaUsage → ImageCategory）：
+ *   · FACTORY     → factory    工厂全景 / 厂区
+ *   · PRODUCTION  → production 生产车间 / 工序（与工厂图集同区展示）
+ *   · LOADING     → loading    装车 / 发运
+ *   · EXHIBITION  → exhibition 展会
+ * 其余用途（产品 / 博客 / 证书 / 应用 / 站点 / 其它）不属于本页，忽略。
+ * --------------------------------------------------------------------------*/
+const MEDIA_USAGE_TO_CATEGORY: Record<string, ImageCategory> = {
+  FACTORY: 'factory',
+  PRODUCTION: 'production',
+  LOADING: 'loading',
+  EXHIBITION: 'exhibition',
+};
+
+/** 媒体库自动聚合图的排序基址（排在分区登记图之后） */
+const MEDIA_SORT_BASE = 5000;
+
+/** 公开接口：按用途列出的媒体项（与后端 PublicMediaItem 对齐） */
+interface ApiMediaItem {
+  id: string;
+  url: string;
+  altText: string | null;
+  title: string | null;
+  caption: string | null;
+  usage: string;
+  createdAt: string;
+}
+
+/**
+ * 拉取媒体库中已按用途分类的图片（api 模式）。
+ *
+ * 只取与工厂页相关的四种用途；接口本身一次返回全部已分类媒体
+ * （上限 48），这里按映射表过滤，未映射的用途不进工厂页。
+ */
+async function fetchApiMediaImages(): Promise<FactoryImage[]> {
+  const response = await apiGet<{ items: ApiMediaItem[]; total: number }>(
+    '/public/media?limit=48',
+    { tags: [CmsTags.media], revalidate: CmsRevalidate.STABLE },
+  );
+  const images: FactoryImage[] = [];
+  response.items.forEach((item, index) => {
+    const category = MEDIA_USAGE_TO_CATEGORY[item.usage];
+    if (!category) return; // 非工厂页用途
+    images.push({
+      id: `media-${item.id}`,
+      url: item.url,
+      alt: item.altText ?? item.title ?? '',
+      category,
+      sortOrder: MEDIA_SORT_BASE + index * 10,
+      caption: item.caption ?? item.title ?? undefined,
+    });
+  });
+  return images;
 }
 
 /** 按分类取图片（单分类） */

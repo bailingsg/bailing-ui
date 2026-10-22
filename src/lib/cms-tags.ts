@@ -37,10 +37,11 @@ export type CmsRevalidateValue = (typeof CmsRevalidate)[keyof typeof CmsRevalida
 
 /** 内容实体类型（与后端 tag 前缀一一对应） */
 export const CmsTags = {
-  /* 产品 */
-  products: 'products',
-  product: (slug: string) => `product:${slug}`,
-  categories: 'categories',
+/* 产品 */
+products: 'products',
+/** 实体 tag 以产品 id 为键（详情路由 /products/[slugId]，与后端契约逐字一致） */
+product: (id: string) => `product:${id}`,
+categories: 'categories',
 
   /* 博客 */
   blog: 'blog',
@@ -54,6 +55,9 @@ export const CmsTags = {
   /* 单页内容 */
   factory: 'factory',
   quality: 'quality',
+
+  /* 媒体库（按用途分类的图片聚合，后台媒体变更时失效） */
+  media: 'media',
 
   /* 横切内容 */
   site: 'site',
@@ -73,6 +77,7 @@ export const ALL_STATIC_TAGS = [
   CmsTags.applications,
   CmsTags.factory,
   CmsTags.quality,
+  CmsTags.media,
   CmsTags.site,
   CmsTags.navigation,
   CmsTags.contacts,

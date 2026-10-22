@@ -5,7 +5,7 @@ import { ContentPlaceholder } from '@/components/layout/content-placeholder';
 import { CtaBand } from '@/components/layout/cta-band';
 import { LinkPagination } from '@/components/common/link-pagination';
 import { BlogCard } from '@/components/blog/blog-card';
-import { BlogCategoryFilter } from '@/components/blog/blog-category-filter';
+// import { BlogCategoryFilter } from '@/components/blog/blog-category-filter';
 import { WebPageSchema } from '@/components/seo/web-page-schema';
 import { ContentFallbackNotice } from '@/components/common/content-fallback-notice';
 import { Badge } from '@/components/ui/badge';
@@ -26,7 +26,7 @@ import {
 /**
  * 资讯 / 知识库列表 /blog（中文：/zh-CN/blog）
  *
- * 结构：Hero → Category Filter → Article Cards → Pagination → CTA
+ * 结构：Hero → Article Cards → Pagination → CTA
  *
  * 定位：**行业知识内容体系**（Industry Knowledge / Buying Guide /
  * Wood Material Guide / Manufacturing Insights），不是企业新闻。
@@ -87,6 +87,9 @@ export default async function BlogPage({ params, searchParams }: BlogPageProps) 
 
   const rawCategory = firstValue(query.category)?.trim();
   // 非法分类值收敛为"全部"，避免出现空结果页面
+  //
+  // 注：分类筛选 UI 暂时隐藏（业务要求），但 `?category=` 深链仍生效，
+  // 恢复 UI 时只需取消下方 <Section> 与 BlogCategoryFilter 引入的注释。
   const category = await normalizeBlogCategory(rawCategory);
 
   const rawPage = Number(firstValue(query.page));
@@ -98,7 +101,6 @@ export default async function BlogPage({ params, searchParams }: BlogPageProps) 
   ]);
 
   const categoryNames = new Map(categories.map((item) => [item.slug, item.name]));
-  const activeCategory = categories.find((item) => item.slug === category);
 
   return (
     <>
@@ -129,7 +131,8 @@ export default async function BlogPage({ params, searchParams }: BlogPageProps) 
         }
       />
 
-      {/* 分类筛选 */}
+      {/* 分类筛选（暂时隐藏：恢复时取消注释，并把 SectionHeader 的
+          title/description 改回 activeCategory 优先即可）
       <Section size="sm" tone="surface">
         <BlogCategoryFilter
           categories={categories}
@@ -137,17 +140,14 @@ export default async function BlogPage({ params, searchParams }: BlogPageProps) 
           locale={locale}
         />
       </Section>
+      */}
 
       {/* 文章列表 */}
       <Section>
         <SectionHeader
           eyebrow={m.blog.articlesEyebrow}
-          title={activeCategory ? activeCategory.name : m.blog.latestArticles}
-          description={
-            activeCategory
-              ? t('blog.categorySummary', { count: result.total })
-              : m.blog.articlesDescription
-          }
+          title={m.blog.latestArticles}
+          description={m.blog.articlesDescription}
           action={
             <span className="text-small text-text-muted">
               {result.total === 1
