@@ -10,25 +10,16 @@ import type { PublicNavItem } from '@/lib/site';
 /**
  * Footer —— 站点页脚
  *
- * 结构：品牌栏 + 站点导航栏（CMS 驱动，Phase 4.7）+ 联系信息栏。
+ * 结构：品牌栏 + 站点导航栏（CMS 驱动，Phase 4.7）+ 地址栏。
  *
  * 导航链接来自后端公开 API（/public/navigation?location=FOOTER），
  * 由服务端获取后经 props 传入；链接在 CMS 写入时已做安全校验
  * （仅站内相对路径 / https / mailto / tel），新窗口项自动补 rel。
  *
- * 联系信息栏只保留「联系我们」入口与地址：邮箱 / 电话 / 资质证书 / 社交媒体
- * 已按要求移除，联系方式统一由联系我们页承载。
+ * 第三栏只保留地址：邮箱 / 电话 / 资质证书 / 社交媒体已按要求移除；
+ * 「联系我们」入口不再重复——站点导航列本就带一项，再放一个属于冗余。
+ * 需要联系方式的访客统一走联系我们页（含地图与员工直联方式）。
  */
-function ContactRow({ label, value, placeholder }: { label: string; value: string; placeholder: string }) {
-  return (
-    <div className="flex flex-col gap-0.5">
-      <dt className="text-caption tracking-wider text-neutral-400 uppercase">{label}</dt>
-      <dd className={cn('text-small', value ? 'text-surface-inverse-foreground' : 'text-neutral-500')}>
-        {value || placeholder}
-      </dd>
-    </div>
-  );
-}
 
 export function Footer({ items, locale }: { items: PublicNavItem[]; locale: Locale }) {
   const year = new Date().getFullYear();
@@ -37,6 +28,7 @@ export function Footer({ items, locale }: { items: PublicNavItem[]; locale: Loca
   const description = isDefaultLocale ? siteConfig.description : siteConfig.descriptionZh;
   const tagline = isDefaultLocale ? siteConfig.tagline : siteConfig.taglineZh;
   const placeholder = isDefaultLocale ? siteConfig.placeholderText : siteConfig.placeholderTextZh;
+  const address = isDefaultLocale ? contactInfo.addressEn : contactInfo.address;
 
   return (
     <footer className="bg-surface-inverse text-surface-inverse-foreground">
@@ -87,27 +79,20 @@ export function Footer({ items, locale }: { items: PublicNavItem[]; locale: Loca
             )}
           </nav>
 
-          {/* 联系信息栏：只保留「联系我们」入口与地址。
-              邮箱 / 电话 / 资质证书 / 社交媒体按要求移除——这些数据在业务方
-              确认前本就是「待补充」占位，空占位比不展示更影响观感；
-              需要联系方式的访客统一走联系我们页（含地图与员工直联方式）。 */}
-          <div className="flex flex-col gap-4 sm:col-span-2 lg:col-span-4">
+          {/* 地址栏：只保留地址。「联系我们」入口已在站点导航列中存在，
+              此处不再重复；标题直接用「地址」，与其余两栏标题保持同一基线对齐。 */}
+          <div className="flex flex-col gap-3 sm:col-span-2 lg:col-span-4">
             <h2 className="text-small font-semibold text-surface-inverse-foreground">
-              <LocaleLink
-                locale={locale}
-                href="/contact"
-                className="underline-offset-4 transition-colors duration-[var(--duration-fast)] hover:text-primary hover:underline"
-              >
-                {t('common.contactUs')}
-              </LocaleLink>
+              {t('nav.address')}
             </h2>
-            <dl className="flex flex-col gap-3">
-              <ContactRow
-                label={t('nav.address')}
-                value={isDefaultLocale ? contactInfo.addressEn : contactInfo.address}
-                placeholder={placeholder}
-              />
-            </dl>
+            <p
+              className={cn(
+                'text-small',
+                address ? 'text-surface-inverse-foreground' : 'text-neutral-500',
+              )}
+            >
+              {address || placeholder}
+            </p>
           </div>
         </div>
 
