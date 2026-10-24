@@ -147,6 +147,21 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   }
 
   /* ------------------------------------------------------------------ */
+  /* 2.5 图册浏览页豁免（/catalog）                                        */
+  /* ------------------------------------------------------------------ */
+  // /catalog 是「新窗口打开的工具页」：独立根布局（app/catalog/layout.tsx，
+  // 自带 <html>/<body>，无站点 chrome），语言标签按 NEXT_LOCALE Cookie
+  // 在页面内自选。若走下面的语言重写会被指向 /en/catalog（404），
+  // 因此整条路径豁免；带语言前缀的地址 301 归一回规范地址。
+  const localeFreeForExempt = (localeFreePath.length > 1 ? localeFreePath.replace(/\/+$/, '') : localeFreePath);
+  if (localeFreeForExempt === '/catalog') {
+    if (pathLocale) {
+      return NextResponse.redirect(new URL(`/catalog${search}`, request.url), 301);
+    }
+    return NextResponse.next();
+  }
+
+  /* ------------------------------------------------------------------ */
   /* 3. 无前缀路径：按 Cookie 偏好跳到中文，否则内部重写到 /en            */
   /* ------------------------------------------------------------------ */
   // 把本次生效的语言写进请求头：404 / 错误边界拿不到路由参数，

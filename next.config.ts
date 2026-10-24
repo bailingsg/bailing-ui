@@ -13,7 +13,14 @@ import type { NextConfig } from 'next';
  * 地址来源（构建期读取）：
  *   · NEXT_PUBLIC_API_BASE_URL      —— 后端 API 基地址（含 host/port）
  *   · NEXT_PUBLIC_UPLOADS_BASE_URL  —— 媒体 URL 基地址（后端 UPLOADS_BASE_URL 的对应值）
+ *   · NEXT_PUBLIC_CDN_BASE_URL      —— 腾讯云 CDN 域名（Phase 6.0 起新图走 /media/**）
  * 另始终放行本机开发地址（localhost / 127.0.0.1）。
+ *
+ * ⚠️ 这些变量**运行期也必须存在**：生产镜像不是 standalone 构建，`next start`
+ * 会在容器启动时重新加载本文件。只有 build-arg 是不够的——客户端包内联正确，
+ * 但 remotePatterns 会是空数组，`/_next/image` 对每个远程 URL 都返回 400
+ * `"url" parameter is not allowed`。生产在 compose 的 frontend.environment
+ * 里注入了同样的变量，见 Dockerfile 顶部的事故说明。
  *
  * 安全取舍：这里**不**使用 `hostname: '**'`。放开任意主机等于把 Next 图片
  * 优化器变成开放代理；只登记本项目自己的后端 / 媒体域名。
@@ -26,8 +33,11 @@ interface RemotePattern {
   pathname: string;
 }
 
-/** 把基地址转换为 next/image 的 remotePattern（仅 /uploads/** 路径） */
-function toRemotePattern(rawUrl: string | undefined): RemotePattern | null {
+/** 把基地址转换为 next/image 的 remotePattern（默认 /uploads/** 路径） */
+function toRemotePattern(
+  rawUrl: string | undefined,
+  pathname = '/uploads/**',
+): RemotePattern | null {
   if (!rawUrl) return null;
   try {
     const url = new URL(rawUrl);
@@ -35,7 +45,7 @@ function toRemotePattern(rawUrl: string | undefined): RemotePattern | null {
       protocol: url.protocol.replace(':', '') as 'http' | 'https',
       hostname: url.hostname,
       ...(url.port ? { port: url.port } : {}),
-      pathname: '/uploads/**',
+      pathname,
     };
   } catch {
     return null;
@@ -47,7 +57,8 @@ const seen = new Set<string>();
 
 function addPattern(pattern: RemotePattern | null): void {
   if (!pattern) return;
-  const key = `${pattern.protocol}://${pattern.hostname}:${pattern.port ?? ''}`;
+  // 去重键包含 pathname：同一主机可能既放行 /uploads/**（历史图）又放行 /media/**（COS 图）
+  const key = `${pattern.protocol}://${pattern.hostname}:${pattern.port ?? ''}${pattern.pathname}`;
   if (seen.has(key)) return;
   seen.add(key);
   remotePatterns.push(pattern);
@@ -55,6 +66,14 @@ function addPattern(pattern: RemotePattern | null): void {
 
 addPattern(toRemotePattern(process.env.NEXT_PUBLIC_API_BASE_URL));
 addPattern(toRemotePattern(process.env.NEXT_PUBLIC_UPLOADS_BASE_URL));
+
+/**
+ * Phase 6.0：腾讯云 COS + CDN。
+ * 新上传的媒体落库 URL 形如 https://cdn.bailingwooden.com/media/2026/10/xxx.webp，
+ * 路径前缀是 /media/（glob 为 /media/**，不是 /uploads/**），必须单独登记，否则 next/image 会拒绝该主机。
+ * 历史本地图（/uploads/**）保持原样放行——旧内容不受影响。
+ */
+addPattern(toRemotePattern(process.env.NEXT_PUBLIC_CDN_BASE_URL, '/media/**'));
 
 // 本机开发地址：始终放行（生产构建时这些域名不会出现在内容里，无副作用）
 for (const hostname of ['localhost', '127.0.0.1']) {

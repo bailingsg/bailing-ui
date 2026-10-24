@@ -14,6 +14,7 @@ export const en = {
     viewAll: 'View All',
     viewDetails: 'View Details',
     viewApplications: 'View Applications',
+    viewCatalog: 'View Product Catalog',
     viewFactory: 'View Factory',
     viewQuality: 'View Quality Control',
     browseProducts: 'Browse Products',
@@ -186,6 +187,18 @@ export const en = {
     demoBadge: 'Demo / Placeholder',
     demoText:
       'Product records below are placeholder data used to validate the page template. They will be replaced by CMS-managed content.',
+  },
+
+  catalog: {
+    metaTitle: 'Product Catalog',
+    metaDescription:
+      'Browse the Bailing Wooden product catalog online and download the full PDF version.',
+    title: 'Product Catalog',
+    hint: 'Browse the full catalog below, page by page. Use the button above to download the PDF version.',
+    download: 'Download PDF',
+    pageCount: '{count} pages',
+    pageOf: 'Page {page} of {total}',
+    altPage: 'Product catalog, page {page}',
   },
 
   productDetail: {

@@ -14,6 +14,7 @@ export const zhCN = {
     viewAll: '查看全部',
     viewDetails: '查看详情',
     viewApplications: '查看应用场景',
+    viewCatalog: '查看产品图册',
     viewFactory: '查看工厂',
     viewQuality: '查看品质管控',
     browseProducts: '浏览产品',
@@ -175,6 +176,17 @@ export const zhCN = {
     ctaDescription: '发送您的规格或图纸 —— OEM / ODM 项目支持定制生产。',
     demoBadge: '演示数据',
     demoText: '以下产品记录为用于验证页面模板的占位数据，后续将由 CMS 内容替换。',
+  },
+
+  catalog: {
+    metaTitle: '产品图册',
+    metaDescription: '在线浏览百灵木业产品图册，并可下载完整 PDF 版本。',
+    title: '产品图册',
+    hint: '下方为完整产品图册，可逐页浏览；点击右上角按钮下载 PDF 版本。',
+    download: '下载 PDF',
+    pageCount: '共 {count} 页',
+    pageOf: '第 {page} / {total} 页',
+    altPage: '产品图册第 {page} 页',
   },
 
   productDetail: {

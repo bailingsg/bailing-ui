@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
+import { BookOpen } from 'lucide-react';
 import { Container } from '@/components/layout/container';
 import { Section, SectionHeader } from '@/components/layout/section';
 import { ContentPlaceholder } from '@/components/layout/content-placeholder';
@@ -13,6 +14,7 @@ import { ContentFallbackNotice } from '@/components/common/content-fallback-noti
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { resolveSeoMetadata } from '@/lib/seo/resolver';
+import { CATALOG_VIEWER_PATH } from '@/lib/catalog';
 import { LocaleLink } from '@/i18n/link';
 import { getI18n } from '@/i18n';
 import { defaultLocale, isLocale, type Locale } from '@/i18n/config';
@@ -278,6 +280,13 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
                   >
                     {t('common.requestQuote')}
                   </LocaleLink>
+                </Button>
+                {/* 产品图册：新窗口打开 /catalog（独立浏览页，见 src/app/catalog） */}
+                <Button asChild size="lg" variant="outline">
+                  <a href={CATALOG_VIEWER_PATH} target="_blank" rel="noopener noreferrer">
+                    <BookOpen aria-hidden="true" />
+                    {t('common.viewCatalog')}
+                  </a>
                 </Button>
                 <Button asChild size="lg" variant="outline">
                   <LocaleLink locale={locale} href="/products">

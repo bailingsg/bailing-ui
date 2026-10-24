@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { BookOpen } from 'lucide-react';
 import { PageHero } from '@/components/layout/page-hero';
 import { Section, SectionHeader } from '@/components/layout/section';
 import { ContentPlaceholder } from '@/components/layout/content-placeholder';
@@ -9,7 +10,9 @@ import { ProductPagination } from '@/components/products/product-pagination';
 import { DemoDataNotice } from '@/components/products/demo-data-notice';
 import { ContentFallbackNotice } from '@/components/common/content-fallback-notice';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { resolveSeoMetadata } from '@/lib/seo/resolver';
+import { CATALOG_VIEWER_PATH } from '@/lib/catalog';
 import { getCategories, getProducts, isDemoSource, productDetailPath, type ProductListItem } from '@/lib/products';
 import { getI18n } from '@/i18n';
 import { defaultLocale, isLocale, type Locale } from '@/i18n/config';
@@ -91,6 +94,15 @@ export default async function ProductsPage({ params, searchParams }: ProductsPag
         title={m.products.title}
         {...(isDefaultLocale ? { titleZh: m.products.titleZh } : {})}
         description={m.products.description}
+        actions={
+          /* 产品图册入口：新窗口打开 /catalog（独立浏览页，见 src/app/catalog） */
+          <Button asChild size="lg" variant="outline">
+            <a href={CATALOG_VIEWER_PATH} target="_blank" rel="noopener noreferrer">
+              <BookOpen aria-hidden="true" />
+              {t('common.viewCatalog')}
+            </a>
+          </Button>
+        }
         aside={
           <div className="flex flex-wrap gap-2">
             <Badge variant="material">{m.products.badgeOem}</Badge>
