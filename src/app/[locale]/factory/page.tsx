@@ -3,7 +3,7 @@ import { PageHero } from '@/components/layout/page-hero';
 import { Section, SectionHeader } from '@/components/layout/section';
 import { ContentPlaceholder } from '@/components/layout/content-placeholder';
 import { CtaBand } from '@/components/layout/cta-band';
-import { GalleryGrid } from '@/components/media/gallery-grid';
+import { FactoryGallery } from '@/components/media/factory-gallery';
 import { ProcessFlow } from '@/components/common/process-flow';
 import { ContentFallbackNotice } from '@/components/common/content-fallback-notice';
 import { WebPageSchema } from '@/components/seo/web-page-schema';
@@ -14,7 +14,7 @@ import { LocaleLink } from '@/i18n/link';
 import { getI18n } from '@/i18n';
 import { defaultLocale, isLocale, type Locale } from '@/i18n/config';
 import { localizedPath } from '@/i18n/paths';
-import { getFactoryOverview, getImages, MAX_IMAGES_PER_GALLERY } from '@/lib/factory';
+import { getFactoryOverview, getImages, FACTORY_MAX_IMAGES_PER_GALLERY } from '@/lib/factory';
 
 /**
  * 工厂实力页 /factory（中文：/zh-CN/factory）
@@ -66,12 +66,14 @@ export default async function FactoryPage({ params }: FactoryPageProps) {
   const locale = resolveLocale(rawLocale);
   const { t, m, isDefaultLocale } = getI18n(locale);
 
+  // 工厂页各板块拉取**全量**素材：预览截断到 FACTORY_MAX_IMAGES_PER_GALLERY（6）
+  // 由客户端组件负责，其余照片经「查看更多照片」弹窗展示（2026-10-24 起）。
   const [facilityImages, equipmentImages, loadingImages, exhibitionImages, overview] =
     await Promise.all([
-      getImages(['factory', 'production']),
-      getImages(['equipment']),
-      getImages(['loading']),
-      getImages(['exhibition']),
+      getImages(['factory', 'production'], Number.POSITIVE_INFINITY),
+      getImages(['equipment'], Number.POSITIVE_INFINITY),
+      getImages(['loading'], Number.POSITIVE_INFINITY),
+      getImages(['exhibition'], Number.POSITIVE_INFINITY),
       // demo 模式返回 null（不发请求），页面保留既有待补充版式；
       // 中文页不使用 CMS 概述（只有英文），改用 messages 里的中文文案
       isDefaultLocale ? getFactoryOverview() : Promise.resolve(null),
@@ -126,18 +128,20 @@ export default async function FactoryPage({ params }: FactoryPageProps) {
         </div>
       </Section>
 
-      {/* 2. Factory Gallery（工厂 + 生产合并图集；每种匹配类型最多 3 张，见 lib/factory） */}
+      {/* 2. Factory Gallery（工厂 + 生产合并图集；预览上限 6 张，其余经「查看更多」展示，见 lib/factory） */}
       <Section tone="surface">
         <SectionHeader
           eyebrow={m.factory.galleryEyebrow}
           title={m.factory.galleryTitle}
           description={m.factory.galleryDescription}
         />
-        <GalleryGrid
+        <FactoryGallery
           className="mt-10"
           images={facilityImages}
+          previewCount={FACTORY_MAX_IMAGES_PER_GALLERY}
+          placeholderCount={FACTORY_MAX_IMAGES_PER_GALLERY}
+          dialogTitle={m.factory.galleryTitle}
           columns={3}
-          placeholderCount={MAX_IMAGES_PER_GALLERY}
           locale={locale}
           placeholderLabel={t('common.photoPending')}
           emptyNotice={m.factory.galleryEmptyNotice}
@@ -161,11 +165,13 @@ export default async function FactoryPage({ params }: FactoryPageProps) {
           title={m.factory.equipmentTitle}
           description={m.factory.equipmentDescription}
         />
-        <GalleryGrid
+        <FactoryGallery
           className="mt-10"
           images={equipmentImages}
+          previewCount={FACTORY_MAX_IMAGES_PER_GALLERY}
+          placeholderCount={FACTORY_MAX_IMAGES_PER_GALLERY}
+          dialogTitle={m.factory.equipmentTitle}
           columns={3}
-          placeholderCount={MAX_IMAGES_PER_GALLERY}
           locale={locale}
           placeholderLabel={m.factory.equipmentPlaceholder}
           emptyNotice={m.factory.equipmentEmptyNotice}
@@ -191,11 +197,13 @@ export default async function FactoryPage({ params }: FactoryPageProps) {
           ))}
         </div>
 
-        <GalleryGrid
+        <FactoryGallery
           className="mt-8"
           images={loadingImages}
+          previewCount={FACTORY_MAX_IMAGES_PER_GALLERY}
+          placeholderCount={FACTORY_MAX_IMAGES_PER_GALLERY}
+          dialogTitle={m.factory.loadingTitle}
           columns={3}
-          placeholderCount={MAX_IMAGES_PER_GALLERY}
           locale={locale}
           placeholderLabel={m.factory.loadingPlaceholder}
           emptyNotice={m.factory.loadingEmptyNotice}
@@ -209,11 +217,13 @@ export default async function FactoryPage({ params }: FactoryPageProps) {
           title={m.factory.exhibitionTitle}
           description={m.factory.exhibitionDescription}
         />
-        <GalleryGrid
+        <FactoryGallery
           className="mt-10"
           images={exhibitionImages}
+          previewCount={FACTORY_MAX_IMAGES_PER_GALLERY}
+          placeholderCount={FACTORY_MAX_IMAGES_PER_GALLERY}
+          dialogTitle={m.factory.exhibitionTitle}
           columns={3}
-          placeholderCount={MAX_IMAGES_PER_GALLERY}
           locale={locale}
           placeholderLabel={m.factory.exhibitionPlaceholder}
           emptyNotice={m.factory.exhibitionEmptyNotice}

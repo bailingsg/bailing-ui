@@ -12,6 +12,7 @@ export type {
 } from './types';
 export {
   FACTORY_GALLERY_CATEGORIES,
+  FACTORY_MAX_IMAGES_PER_GALLERY,
   MAX_IMAGES_PER_GALLERY,
   QUALITY_GALLERY_CATEGORIES,
   getFactoryOverview,

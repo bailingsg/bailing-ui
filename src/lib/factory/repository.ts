@@ -42,13 +42,23 @@ export const QUALITY_GALLERY_CATEGORIES: QualityImageCategory[] = [
 ];
 
 /**
- * 单个图集最多展示的图片数（硬上限，超过一律截断）。
+ * 质量页单个图集最多展示的图片数（硬上限，超过一律截断）。
  *
- * 业务规则（2026-10-23 确认）：工厂页 / 质量页的各图集**每个匹配类型
- * 最多三张**，只取最新的，不可超过三张。页面各图集均为三列布局，
- * 空态占位数量（placeholderCount）也按 3 对齐。
+ * 业务规则（2026-10-23 确认）：质量页各图集每个匹配类型最多三张，
+ * 只取最新的，不可超过三张。质量页各图集均为三列布局，空态占位数量
+ * （placeholderCount）也按 3 对齐。
  */
 export const MAX_IMAGES_PER_GALLERY = 3;
+
+/**
+ * 工厂页单个图集最多展示的图片数（硬上限，超过一律截断）。
+ *
+ * 业务规则（2026-10-24 起）：工厂页各板块上限由 3 提高至 6。超出部分
+ * 不再直接丢弃——页面拉取全量数据，由客户端组件截断预览数量，
+ * 其余照片经「查看更多照片」弹窗展示，因此本常量只约束**预览数量**，
+ * 数据层查询请传 `Infinity` 取全量。
+ */
+export const FACTORY_MAX_IMAGES_PER_GALLERY = 6;
 
 function sortImages(images: FactoryImage[]): FactoryImage[] {
   return [...images].sort((a, b) => {
@@ -227,7 +237,7 @@ interface ApiMediaItem {
  *
  * 只取与工厂页相关的四种用途；接口本身一次返回全部已分类媒体
  * （上限 48，按上传时间倒序）。数量截断不在这里做——由
- * `capLatest()` 在按分类查询时统一执行（每个图集最多 3 张）。
+ * `capLatest()` 在按分类查询时统一执行（工厂页预览 6 张 / 质量页 3 张）。
  */
 async function fetchApiMediaImages(): Promise<FactoryImage[]> {
   const response = await apiGet<{ items: ApiMediaItem[]; total: number }>(
@@ -276,8 +286,9 @@ export async function getImagesByCategory(
 /**
  * 按多个分类取图片（合并后统一排序、截断）。
  *
- * 截断按**整个查询**计：一次调用最多返回 limit 张（默认 3）——
- * 工厂图集把 factory + production 合并展示，同样受三张上限约束。
+ * 截断按**整个查询**计：一次调用最多返回 limit 张（默认 3，质量页口径）。
+ * 工厂页预览 6 张且需「查看更多」全量，页面显式传
+ * `FACTORY_MAX_IMAGES_PER_GALLERY`（预览）或 `Infinity`（全量）。
  */
 export async function getImages(
   categories: ImageCategory[],

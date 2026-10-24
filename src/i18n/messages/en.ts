@@ -38,6 +38,13 @@ export const en = {
     toBeConfirmed: 'To be confirmed',
     showImage: 'Show image {index} of {total}',
     imageAltSuffix: '{alt} — image {n}',
+    lightboxClose: 'Close',
+    lightboxPrevious: 'Previous',
+    lightboxNext: 'Next',
+    lightboxCounter: '{index} / {total}',
+    lightboxZoomIn: 'Enlarge',
+    videoLabel: 'Video',
+    playVideo: 'Play video',
     countProducts: '{count} products',
     countProductOne: '{count} product',
     countArticles: '{count} articles',
@@ -464,6 +471,7 @@ export const en = {
     galleryDescription:
       'Photographs of the production base, workshops and production lines will be displayed here.',
     galleryEmptyNotice: 'Factory photographs will be updated once provided by the business.',
+    viewMorePhotos: 'View more photos ({count} in total)',
     processEyebrow: 'Process',
     processTitle: 'Production process',
     processDescription:
