@@ -625,9 +625,15 @@ export const zhCN = {
     directSendTitle: '发送给 {name}',
     /** 无对外邮箱时的占位 */
     noPublicEmail: '暂未公开邮箱',
+    /** 员工卡片的 WhatsApp 入口文案：不展示号码本身，只给行动入口 */
+    chatOnWhatsApp: '通过 WhatsApp 联系我',
+    /** 员工卡片的邮件入口文案：不展示邮箱本身，只给行动入口 */
+    emailMe: '通过邮件联系我',
     rfqEyebrow: '询价',
     rfqTitle: '发送询盘',
     rfqDescription: '请在下方表单填写需求，我们的出口团队会审核每一条询盘并回复报价。',
+    /** 「发送给某销售」弹窗副标题：第一人称，区别于页面上的团队口径文案 */
+    directRfqDescription: '请在下方表单填写需求，我会查看每一条询盘并及时回复您。',
     nextTitle: '接下来会发生什么',
     nextSteps: {
       review: '我们审核您的规格或图纸。',
@@ -696,8 +702,6 @@ export const zhCN = {
     attachmentTooLarge: '“{name}” 超过 {max}MB，将不会被发送。',
     attachmentSelectedNote: '已选择“{name}” —— 在线附件上传尚未启用，请在需求描述中一并说明。',
     privacy: '您的信息仅用于回复本次询盘。',
-    /** 直发模式提示（{name} 为收件销售姓名） */
-    directNote: '本询盘将直接送达 {name}，不进入公共询盘分配队列。',
     submit: '提交询盘',
     submitting: '提交中…',
     successTitle: '感谢您的询盘。',

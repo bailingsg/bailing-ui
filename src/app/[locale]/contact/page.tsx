@@ -1,10 +1,13 @@
 import type { Metadata } from 'next';
+import { Mail, Phone } from 'lucide-react';
 import { PageHero } from '@/components/layout/page-hero';
 import { Section, SectionHeader } from '@/components/layout/section';
 import { ContentPlaceholder } from '@/components/layout/content-placeholder';
 import { CtaBand } from '@/components/layout/cta-band';
 import { RfqForm } from '@/components/rfq/rfq-form';
 import { DirectRfqDialog } from '@/components/contacts/direct-rfq-dialog';
+import { ContactChannel } from '@/components/contacts/contact-channel';
+import { WhatsAppIcon } from '@/components/icons/whatsapp-icon';
 import { LocationMap } from '@/components/location-map';
 import { Card, CardDescription, CardTitle } from '@/components/ui/card';
 import { resolveSeoMetadata } from '@/lib/seo/resolver';
@@ -176,66 +179,90 @@ export default async function ContactPage({ params, searchParams }: ContactPageP
             description={m.contact.contactsDescription}
           />
           <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {publicContacts.map((contact) => (
-              <Card
-                key={`${contact.displayName}-${contact.sortOrder}`}
-                className="relative overflow-hidden p-5 sm:p-6"
-              >
-                {/* 左：姓名 + 职位 + 联系方式。右侧留出 pr-40 给头像占位 */}
-                <div className="flex min-w-0 flex-1 flex-col gap-5 pr-40">
-                  <CardTitle>{contact.displayName}</CardTitle>
-                  <CardDescription>{contact.jobTitle}</CardDescription>
-                  {/* 销售邮箱不再走 mailto：改为打开「发送给某销售」站内信箱弹窗
-                      （表单提交带 directEmail，直达本人且不占用询盘轮转顺位） */}
-                  <DirectRfqDialog contact={contact} locale={locale} />
-                  {(() => {
-                    // 号码统一规范化为 https://wa.me/<国际号码>；
-                    // 无法规范化时回退纯文本（绝不产出非法 wa.me 链接）
-                    const waUrl = toWhatsAppUrl(contact.whatsapp);
-                    if (!contact.whatsapp) return null;
-                    return waUrl ? (
-                      <a
-                        href={waUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary underline underline-offset-4 transition-colors hover:text-primary-hover"
-                      >
-                        WhatsApp
-                      </a>
-                    ) : (
-                      <span>WhatsApp: {contact.whatsapp}</span>
-                    );
-                  })()}
-                  {contact.phone ? (
-                    <a
-                      href={`tel:${contact.phone}`}
-                      className="text-primary underline underline-offset-4 transition-colors hover:text-primary-hover"
-                    >
-                      {contact.phone}
-                    </a>
-                  ) : null}
-                </div>
-
-                {/* 右：头像。纵向贴满整张卡片（inset-y-0），右侧与卡片右边界齐平，
-                    由 Card 自带 overflow-hidden 保证不溢出。
-                    不再加羽化遮罩——头像自然延伸至卡片右半区，与左侧文字互不干扰。
-                    头像区左侧为卡片内部接缝，四角必须保持直角（不加 rounded-l-*），
-                    否则会在卡片内壁露出一圈圆角，与卡片外框错位。 */}
-                {contact.avatarUrl ? (
-                  <div
-                    aria-hidden="true"
-                    className="pointer-events-none absolute inset-y-0 right-0 w-36 overflow-hidden border border-r-0 border-border bg-surface"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element -- 前台员工头像走动态图床 URL，无需 next/image 优化 */}
-                    <img
-                      src={contact.avatarUrl}
-                      alt={contact.displayName}
-                      className="h-full w-full object-cover"
-                    />
+            {publicContacts.map((contact) => {
+              // 号码统一规范化为 https://wa.me/<国际号码>；无法规范化时回退纯文本
+              // （绝不产出非法 wa.me 链接），且只有号码存在时才渲染这一行
+              const whatsappHref = toWhatsAppUrl(contact.whatsapp);
+              return (
+                <Card
+                  key={`${contact.displayName}-${contact.sortOrder}`}
+                  className="relative overflow-hidden p-5 sm:p-6"
+                >
+                  {/* 左：姓名 + 职位 + 联系方式。右侧留出 pr 给头像占位：
+                      手机单列时头像收窄到 w-32，让长邮箱仍能一行放下 */}
+                  <div className="flex min-w-0 flex-1 flex-col gap-4 pr-32 sm:pr-40">
+                    <div className="flex flex-col gap-1">
+                      <CardTitle>{contact.displayName}</CardTitle>
+                      {contact.jobTitle ? (
+                        <CardDescription>{contact.jobTitle}</CardDescription>
+                      ) : null}
+                    </div>
+                    {/* 每行统一「图标 + 内容」，图标弱化，正文保持卡片正文色 */}
+                    <ul className="flex flex-col gap-2.5">
+                      {/* 销售邮箱不走 mailto：改为打开「发送给某销售」站内信箱弹窗
+                          （表单提交带 directEmail，直达本人且不占用询盘轮转顺位）。
+                          入口文案与 WhatsApp 行对齐，不暴露邮箱地址（悬停 title 可看） */}
+                      <ContactChannel icon={<Mail className="size-4" strokeWidth={1.75} />}>
+                        <DirectRfqDialog
+                          contact={contact}
+                          locale={locale}
+                          triggerLabel={m.contact.emailMe}
+                        />
+                      </ContactChannel>
+                      {/* WhatsApp 不展示号码本身，只给「通过 WhatsApp 联系我」入口；
+                          号码无法规范化（脏数据）时才回退展示原始号码，避免丢信息 */}
+                      {whatsappHref ? (
+                        <ContactChannel icon={<WhatsAppIcon className="size-4" />}>
+                          <a
+                            href={whatsappHref}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary underline underline-offset-4 transition-colors hover:text-primary-hover"
+                          >
+                            {m.contact.chatOnWhatsApp}
+                          </a>
+                        </ContactChannel>
+                      ) : contact.whatsapp ? (
+                        <ContactChannel icon={<WhatsAppIcon className="size-4" />}>
+                          <span className="text-text-secondary">
+                            WhatsApp: {contact.whatsapp}
+                          </span>
+                        </ContactChannel>
+                      ) : null}
+                      {contact.phone ? (
+                        <ContactChannel icon={<Phone className="size-4" strokeWidth={1.75} />}>
+                          <a
+                            href={`tel:${contact.phone}`}
+                            className="text-primary underline underline-offset-4 transition-colors hover:text-primary-hover"
+                          >
+                            {contact.phone}
+                          </a>
+                        </ContactChannel>
+                      ) : null}
+                    </ul>
                   </div>
-                ) : null}
-              </Card>
-            ))}
+
+                  {/* 右：头像。纵向贴满整张卡片（inset-y-0），右侧与卡片右边界齐平，
+                      由 Card 自带 overflow-hidden 保证不溢出。
+                      不再加羽化遮罩——头像自然延伸至卡片右半区，与左侧文字互不干扰。
+                      头像区左侧为卡片内部接缝，四角必须保持直角（不加 rounded-l-*），
+                      否则会在卡片内壁露出一圈圆角，与卡片外框错位。 */}
+                  {contact.avatarUrl ? (
+                    <div
+                      aria-hidden="true"
+                      className="pointer-events-none absolute inset-y-0 right-0 w-32 overflow-hidden border border-r-0 border-border bg-surface sm:w-36"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element -- 前台员工头像走动态图床 URL，无需 next/image 优化 */}
+                      <img
+                        src={contact.avatarUrl}
+                        alt={contact.displayName}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                  ) : null}
+                </Card>
+              );
+            })}
           </div>
           <ContentFallbackNotice locale={locale} variant="subtle" className="mt-6" />
         </Section>

@@ -730,10 +730,17 @@ export const en = {
     directSendTitle: 'Send to {name}',
     /** 无对外邮箱时的占位 */
     noPublicEmail: 'Email not published yet',
+    /** 员工卡片的 WhatsApp 入口文案：不展示号码本身，只给行动入口 */
+    chatOnWhatsApp: 'Chat on WhatsApp',
+    /** 员工卡片的邮件入口文案：不展示邮箱本身，只给行动入口 */
+    emailMe: 'Contact me by email',
     rfqEyebrow: 'Request for Quotation',
     rfqTitle: 'Send an enquiry',
     rfqDescription:
       'Fill in the form below with your requirement. Our export team reviews every enquiry and replies with a quotation.',
+    /** 「发送给某销售」弹窗副标题：第一人称，区别于页面上的团队口径文案 */
+    directRfqDescription:
+      'Fill in the form below with your requirement. I will review every enquiry and reply to you promptly.',
     nextTitle: 'What happens next',
     nextSteps: {
       review: 'We review your specification or drawing.',
@@ -810,9 +817,6 @@ export const en = {
     attachmentSelectedNote:
       '"{name}" selected — online file upload is not enabled yet, so please also describe it in your requirements.',
     privacy: 'We only use your details to respond to this enquiry.',
-    /** 直发模式提示（{name} 为收件销售姓名） */
-    directNote:
-      'This enquiry goes straight to {name}, so it does not go through the general enquiry queue.',
     submit: 'Submit Request',
     submitting: 'Submitting…',
     successTitle: 'Thank you for your inquiry.',

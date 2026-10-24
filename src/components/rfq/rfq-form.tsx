@@ -311,12 +311,8 @@ export function RfqForm({
         )}
       </div>
 
-      {/* 直发说明：访客指定了收件人时展示（普通询盘不出现该行） */}
-      {recipient ? (
-        <p className="rounded-md border border-border bg-surface-elevated px-4 py-3 text-caption text-text-secondary">
-          {t('rfq.directNote', { name: recipient.displayName })}
-        </p>
-      ) : null}
+      {/* 直发说明已按用户要求移除：弹窗标题「发送给 {name}」已表达收件人，
+          不再额外提示「不进入公共询盘分配队列」这类内部机制。 */}
 
       {/*
         失败提示：按用户要求"删除红色内容"，从原 border-destructive/40 bg-destructive/5
