@@ -14,7 +14,7 @@ import { LocaleLink } from '@/i18n/link';
 import { getI18n } from '@/i18n';
 import { defaultLocale, isLocale, type Locale } from '@/i18n/config';
 import { localizedPath } from '@/i18n/paths';
-import { getFactoryOverview, getImages } from '@/lib/factory';
+import { getFactoryOverview, getImages, MAX_IMAGES_PER_GALLERY } from '@/lib/factory';
 
 /**
  * 工厂实力页 /factory（中文：/zh-CN/factory）
@@ -126,7 +126,7 @@ export default async function FactoryPage({ params }: FactoryPageProps) {
         </div>
       </Section>
 
-      {/* 2. Factory Gallery */}
+      {/* 2. Factory Gallery（工厂 + 生产合并图集；每种匹配类型最多 3 张，见 lib/factory） */}
       <Section tone="surface">
         <SectionHeader
           eyebrow={m.factory.galleryEyebrow}
@@ -137,7 +137,7 @@ export default async function FactoryPage({ params }: FactoryPageProps) {
           className="mt-10"
           images={facilityImages}
           columns={3}
-          placeholderCount={6}
+          placeholderCount={MAX_IMAGES_PER_GALLERY}
           locale={locale}
           placeholderLabel={t('common.photoPending')}
           emptyNotice={m.factory.galleryEmptyNotice}
@@ -165,7 +165,7 @@ export default async function FactoryPage({ params }: FactoryPageProps) {
           className="mt-10"
           images={equipmentImages}
           columns={3}
-          placeholderCount={3}
+          placeholderCount={MAX_IMAGES_PER_GALLERY}
           locale={locale}
           placeholderLabel={m.factory.equipmentPlaceholder}
           emptyNotice={m.factory.equipmentEmptyNotice}
@@ -195,7 +195,7 @@ export default async function FactoryPage({ params }: FactoryPageProps) {
           className="mt-8"
           images={loadingImages}
           columns={3}
-          placeholderCount={3}
+          placeholderCount={MAX_IMAGES_PER_GALLERY}
           locale={locale}
           placeholderLabel={m.factory.loadingPlaceholder}
           emptyNotice={m.factory.loadingEmptyNotice}
@@ -213,7 +213,7 @@ export default async function FactoryPage({ params }: FactoryPageProps) {
           className="mt-10"
           images={exhibitionImages}
           columns={3}
-          placeholderCount={3}
+          placeholderCount={MAX_IMAGES_PER_GALLERY}
           locale={locale}
           placeholderLabel={m.factory.exhibitionPlaceholder}
           emptyNotice={m.factory.exhibitionEmptyNotice}

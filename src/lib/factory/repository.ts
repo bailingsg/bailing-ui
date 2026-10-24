@@ -41,11 +41,35 @@ export const QUALITY_GALLERY_CATEGORIES: QualityImageCategory[] = [
   'packaging',
 ];
 
+/**
+ * 单个图集最多展示的图片数（硬上限，超过一律截断）。
+ *
+ * 业务规则（2026-10-23 确认）：工厂页 / 质量页的各图集**每个匹配类型
+ * 最多三张**，只取最新的，不可超过三张。页面各图集均为三列布局，
+ * 空态占位数量（placeholderCount）也按 3 对齐。
+ */
+export const MAX_IMAGES_PER_GALLERY = 3;
+
 function sortImages(images: FactoryImage[]): FactoryImage[] {
   return [...images].sort((a, b) => {
     if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
     return a.id.localeCompare(b.id);
   });
+}
+
+/**
+ * 排序后截断到limit 张。
+ *
+ * 「最新」的口径（两种数据源共用）：
+ *   · 分区登记图（gallery）—— 按编辑排序在前的优先（策展内容）；
+ *   · 媒体库自动聚合图 —— 后端 /public/media 按 createdAt 倒序返回，
+ *     这里的 sortOrder 保持该顺序，即**最新上传的在前**。
+ * 同一图集内登记图排在聚合图之前（既有约定，不变）。
+ */
+function capLatest(images: FactoryImage[], limit: number): FactoryImage[] {
+  const sorted = sortImages(images);
+  if (!Number.isFinite(limit) || limit < 0) return sorted;
+  return sorted.slice(0, limit);
 }
 
 /* ---------------------------------------------------------------------------
@@ -202,7 +226,8 @@ interface ApiMediaItem {
  * 拉取媒体库中已按用途分类的图片（api 模式）。
  *
  * 只取与工厂页相关的四种用途；接口本身一次返回全部已分类媒体
- * （上限 48），这里按映射表过滤，未映射的用途不进工厂页。
+ * （上限 48，按上传时间倒序）。数量截断不在这里做——由
+ * `capLatest()` 在按分类查询时统一执行（每个图集最多 3 张）。
  */
 async function fetchApiMediaImages(): Promise<FactoryImage[]> {
   const response = await apiGet<{ items: ApiMediaItem[]; total: number }>(
@@ -225,23 +250,51 @@ async function fetchApiMediaImages(): Promise<FactoryImage[]> {
   return images;
 }
 
-/** 按分类取图片（单分类） */
-export async function getImagesByCategory(category: ImageCategory): Promise<FactoryImage[]> {
+/**
+ * 按分类取图片（单分类）。
+ *
+ * 默认只取最新的 `MAX_IMAGES_PER_GALLERY`（3）张；limit 传 `Infinity`
+ * 或负数可显式取全量（自检 / 调试场景）。
+ */
+export async function getImagesByCategory(
+  category: ImageCategory,
+  limit: number = MAX_IMAGES_PER_GALLERY,
+): Promise<FactoryImage[]> {
   if (isApiSource()) {
     const images = await fetchApiImages();
-    return images.filter((image) => image.category === category);
+    return capLatest(
+      images.filter((image) => image.category === category),
+      limit,
+    );
   }
-  return sortImages(allImages.filter((image) => image.category === category));
+  return capLatest(
+    allImages.filter((image) => image.category === category),
+    limit,
+  );
 }
 
-/** 按多个分类取图片（合并后统一排序） */
-export async function getImages(categories: ImageCategory[]): Promise<FactoryImage[]> {
+/**
+ * 按多个分类取图片（合并后统一排序、截断）。
+ *
+ * 截断按**整个查询**计：一次调用最多返回 limit 张（默认 3）——
+ * 工厂图集把 factory + production 合并展示，同样受三张上限约束。
+ */
+export async function getImages(
+  categories: ImageCategory[],
+  limit: number = MAX_IMAGES_PER_GALLERY,
+): Promise<FactoryImage[]> {
   const wanted = new Set<ImageCategory>(categories);
   if (isApiSource()) {
     const images = await fetchApiImages();
-    return images.filter((image) => wanted.has(image.category));
+    return capLatest(
+      images.filter((image) => wanted.has(image.category)),
+      limit,
+    );
   }
-  return sortImages(allImages.filter((image) => wanted.has(image.category)));
+  return capLatest(
+    allImages.filter((image) => wanted.has(image.category)),
+    limit,
+  );
 }
 
 /** 是否存在任何素材（页面据此决定是否展示"待补充"提示） */
