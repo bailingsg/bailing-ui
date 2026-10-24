@@ -12,8 +12,15 @@
 # 都返回 400 `"url" parameter is not allowed`。
 # 结论：构建期传 build-arg（客户端用）**并且**运行期注入同样的环境变量
 # （compose 的 frontend.environment，见生产 compose.app.yml）。
-#   docker build -t bailing-ui:<commit> \
-#     --build-arg NEXT_PUBLIC_API_BASE_URL=/api/v1 \
+#
+# ⚠️ 构建期必须能访问 CMS API：`next build` 在 generateStaticParams 阶段会
+# 请求公开接口（应用/产品/博客详情页）。因此 NEXT_PUBLIC_API_BASE_URL 必须传
+# **绝对**地址（相对 `/api/v1` 会让 fetch 报 Failed to parse URL，构建直接失败：
+# `Failed to collect page data for /[locale]/applications/[slug]`），
+# 并用 --network=host + --add-host 让容器内能解析到宿主机 Nginx。
+#   docker build --network=host --add-host bailingwooden.com:127.0.0.1 \
+#     -t bailing-ui:<tag> \
+#     --build-arg NEXT_PUBLIC_API_BASE_URL=https://bailingwooden.com/api/v1 \
 #     --build-arg NEXT_PUBLIC_UPLOADS_BASE_URL=https://bailingwooden.com \
 #     --build-arg NEXT_PUBLIC_CDN_BASE_URL=https://cdn.bailingwooden.com \
 #     --build-arg NEXT_PUBLIC_SITE_URL=https://bailingwooden.com \
