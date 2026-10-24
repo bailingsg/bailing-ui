@@ -81,7 +81,12 @@ export function ProductGallery({
                   src={image.url}
                   alt={image.altText ?? t('common.imageAltSuffix', { alt, n: index + 1 })}
                   aspectRatio="1/1"
-                  sizes="120px"
+                  /* 必须是 Next images.imageSizes 里的标准宽度：
+                     写 120px 这类任意值时，next/image 会按 sizes 生成 120w 候选，
+                     浏览器一旦选中就请求 /_next/image?...&w=120，而优化器只接受
+                     imageSizes/deviceSizes 白名单，直接 400 → 缩略图全部裂图。
+                     128 是默认 imageSizes 成员，DPR=1 的缩略图槽位正好落在它附近。 */
+                  sizes="128px"
                 />
               </button>
             </li>
