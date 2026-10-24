@@ -8,8 +8,8 @@ import {
   CardMedia,
   CardTitle,
 } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { OptimizedImage } from '@/components/common/optimized-image';
+import { Badge } from '@/components/ui/badge';
 import { formatDate, toDateTimeAttribute } from '@/lib/format';
 import { LocaleLink } from '@/i18n/link';
 import { getI18n } from '@/i18n';
@@ -19,14 +19,17 @@ import type { BlogPostSummary } from '@/lib/blog';
 /**
  * BlogCard —— 文章卡片
  *
- * 结构：Cover Image · Category · Title · Excerpt · Date · Read link
+ * 结构：Cover Image · Category · Date · Title · Excerpt · Read link
  * 复用设计系统的 Card / Badge / OptimizedImage，不新建基础组件。
+ *
+ * 分类徽章由调用方传入 `categoryLabel`（从分类清单取显示名，组件不写死映射）；
+ * 未传时按 `post.category`（slug）兜底，再缺则整块徽章不渲染。
  *
  * 无封面图时由 OptimizedImage 渲染统一占位（不伪造图片素材）。
  */
 export interface BlogCardProps {
   post: BlogPostSummary;
-  /** 分类中文名（由调用方从分类清单取，组件不写死分类映射） */
+  /** 分类显示名（由调用方从分类清单取，组件不写死分类映射） */
   categoryLabel?: string;
   className?: string;
   /** 当前语言（决定日期格式、链接前缀与文案） */
@@ -36,6 +39,7 @@ export interface BlogCardProps {
 export function BlogCard({ post, categoryLabel, className, locale = defaultLocale }: BlogCardProps) {
   const { t } = getI18n(locale);
   const published = formatDate(post.publishedAt, locale);
+  const badge = categoryLabel ?? post.category;
 
   return (
     <Card
@@ -57,7 +61,7 @@ export function BlogCard({ post, categoryLabel, className, locale = defaultLocal
 
       <CardHeader className="pb-3">
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="application">{categoryLabel ?? post.category}</Badge>
+          {badge ? <Badge variant="application">{badge}</Badge> : null}
           {published ? (
             <time
               dateTime={toDateTimeAttribute(post.publishedAt)}

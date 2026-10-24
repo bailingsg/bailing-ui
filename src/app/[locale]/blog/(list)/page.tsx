@@ -5,7 +5,7 @@ import { ContentPlaceholder } from '@/components/layout/content-placeholder';
 import { CtaBand } from '@/components/layout/cta-band';
 import { LinkPagination } from '@/components/common/link-pagination';
 import { BlogCard } from '@/components/blog/blog-card';
-// import { BlogCategoryFilter } from '@/components/blog/blog-category-filter';
+import { BlogCategoryFilter } from '@/components/blog/blog-category-filter';
 import { WebPageSchema } from '@/components/seo/web-page-schema';
 import { ContentFallbackNotice } from '@/components/common/content-fallback-notice';
 import { Badge } from '@/components/ui/badge';
@@ -87,14 +87,12 @@ export default async function BlogPage({ params, searchParams }: BlogPageProps) 
 
   const rawCategory = firstValue(query.category)?.trim();
   // 非法分类值收敛为"全部"，避免出现空结果页面
-  //
-  // 注：分类筛选 UI 暂时隐藏（业务要求），但 `?category=` 深链仍生效，
-  // 恢复 UI 时只需取消下方 <Section> 与 BlogCategoryFilter 引入的注释。
   const category = await normalizeBlogCategory(rawCategory);
 
   const rawPage = Number(firstValue(query.page));
   const page = Number.isFinite(rawPage) && rawPage >= 1 ? Math.floor(rawPage) : 1;
 
+  // 分类清单同时服务两处：顶部筛选器 + 卡片分类徽章的显示名
   const [categories, result] = await Promise.all([
     getBlogCategories(),
     getBlogPosts({ category, page, pageSize: BLOG_PAGE_SIZE }),
@@ -131,22 +129,16 @@ export default async function BlogPage({ params, searchParams }: BlogPageProps) 
         }
       />
 
-      {/* 分类筛选（暂时隐藏：恢复时取消注释，并把 SectionHeader 的
-          title/description 改回 activeCategory 优先即可）
+      {/* 分类筛选：链接式筛选（?category=slug），无需客户端状态，利于 SEO 与静态缓存 */}
       <Section size="sm" tone="surface">
-        <BlogCategoryFilter
-          categories={categories}
-          activeSlug={category}
-          locale={locale}
-        />
+        <BlogCategoryFilter categories={categories} activeSlug={category} locale={locale} />
       </Section>
-      */}
 
       {/* 文章列表 */}
       <Section>
         <SectionHeader
           eyebrow={m.blog.articlesEyebrow}
-          title={m.blog.latestArticles}
+          title={category ? (categoryNames.get(category) ?? m.blog.latestArticles) : m.blog.latestArticles}
           description={m.blog.articlesDescription}
           action={
             <span className="text-small text-text-muted">
