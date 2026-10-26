@@ -5,16 +5,19 @@ import { Container } from '@/components/layout/container';
 /**
  * PageHero —— 页面级标题区
  *
- * 全站二级页面统一使用，保证「面包屑式 eyebrow → H1 → 中文副标题 → 描述 → 操作区」
+ * 全站二级页面统一使用，保证「面包屑式 eyebrow → H1 → 副标题 → 描述 → 操作区」
  * 的结构与留白一致。H1 由本组件输出，页面内其余标题从 H2 起，避免多 H1。
+ *
+ * 副标题（subtitle）必须**按当前语言取文案**（`m.<page>.subtitle`），
+ * 不得再输出另一种语言的固定字符串——否则英文站会出现中文小字。
  */
 export interface PageHeroProps {
   /** 标题上方的小标签（如 "Products"） */
   eyebrow?: string;
   /** 页面 H1（英文，面向海外采购商） */
   title: ReactNode;
-  /** 中文副标题（辅助展示） */
-  titleZh?: string;
+  /** 副标题（跟随当前语言，与 H1 互补而非重复） */
+  subtitle?: string;
   /** 页面描述 */
   description?: ReactNode;
   /** 操作区（如 CTA 按钮） */
@@ -28,7 +31,7 @@ export interface PageHeroProps {
 export function PageHero({
   eyebrow,
   title,
-  titleZh,
+  subtitle,
   description,
   actions,
   aside,
@@ -47,8 +50,8 @@ export function PageHero({
             ) : null}
             <div className="flex flex-col gap-2">
               <h1 className="text-balance">{title}</h1>
-              {titleZh ? (
-                <p className="text-heading-sm font-normal text-text-muted">{titleZh}</p>
+              {subtitle ? (
+                <p className="text-heading-sm font-normal text-text-muted">{subtitle}</p>
               ) : null}
             </div>
             {description ? (

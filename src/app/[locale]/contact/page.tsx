@@ -136,7 +136,7 @@ export default async function ContactPage({ params, searchParams }: ContactPageP
       <PageHero
         eyebrow={heroSection?.eyebrow ?? m.contact.eyebrow}
         title={heroSection?.title ?? m.contact.title}
-        {...(isDefaultLocale ? { titleZh: m.contact.titleZh } : {})}
+        subtitle={m.contact.subtitle}
         description={heroSection?.subtitle ?? heroSection?.body ?? m.contact.description}
       />
 

@@ -175,7 +175,7 @@ export const en = {
       'Explore the wooden product range from Bailing Wooden — panels, components, packaging and custom OEM products for B2B buyers worldwide.',
     eyebrow: 'Products',
     title: 'Wooden Products',
-    titleZh: '产品中心',
+    subtitle: 'Panels & boards for furniture, interiors and packaging',
     description:
       'Product categories, specifications and datasheets will be published here. Filtering and search are available below.',
     badgeOem: 'OEM / ODM',
@@ -240,7 +240,7 @@ export const en = {
       'Wood industry insights from Bailing Wooden — buying guides, material comparisons and manufacturing know-how for B2B buyers of MDF, plywood and wood-based panels.',
     eyebrow: 'Blog',
     title: 'Wood Industry Insights',
-    titleZh: '行业知识与采购指南',
+    subtitle: 'Buying guides, material comparisons and manufacturing know-how',
     description:
       'Practical guides on choosing, specifying and checking wood-based panels — written for buyers, not for search engines.',
     badgeKnowledge: 'Industry Knowledge',
@@ -286,7 +286,7 @@ export const en = {
       'Bailing Wooden is a wood panel manufacturer and B2B export supplier based in Shouguang, Shandong, China — producing MDF, plywood, particle board and decorative panels for furniture, interior and construction applications.',
     eyebrow: 'About',
     title: 'About Bailing Wooden',
-    titleZh: '关于百灵木业',
+    subtitle: 'Panel manufacturing and export from Shouguang, Shandong',
     description:
       'Reliable Wood Solutions for Global Partners — a wood panel manufacturer and export supplier working with furniture makers, importers and distributors.',
     profileEyebrow: 'Company Profile',
@@ -454,7 +454,7 @@ export const en = {
     metaDescription: 'Manufacturing capability and production information of Bailing Wooden.',
     eyebrow: 'Factory',
     title: 'Wood Manufacturing Capability',
-    titleZh: '工厂实力',
+    subtitle: 'Production lines, equipment and annual capacity',
     description:
       'Production workflow, workshop and shipment records for wooden product manufacturing. Factory information is published once verified by the business.',
     overviewEyebrow: 'Overview',
@@ -540,7 +540,7 @@ export const en = {
       'Quality control at Bailing Wooden — incoming material inspection, in-process checks, final inspection and packaging protection for wooden products.',
     eyebrow: 'Quality',
     title: 'Quality Control System',
-    titleZh: '品质管控',
+    subtitle: 'Inspection, testing and certification at every stage',
     description:
       'Quality is managed at every stage of production — from incoming material to pre-shipment inspection. Certificates and test reports are published once verified by the business.',
     philosophyEyebrow: 'Philosophy',
@@ -669,7 +669,7 @@ export const en = {
       'Wood panel applications explained — furniture manufacturing, interior decoration, commercial fit-outs, door and cabinet production, packaging and custom solutions.',
     eyebrow: 'Applications',
     title: 'Where Our Panels Are Used',
-    titleZh: '应用场景',
+    subtitle: 'Furniture, interiors, cabinetry and packaging',
     description:
       'From furniture lines to commercial fit-outs and export packaging — how wood-based panels are selected and used in each application.',
     discuss: 'Discuss Your Application',
@@ -722,7 +722,7 @@ export const en = {
       'Contact Bailing Wooden for quotations and product enquiries. Send your specification or drawing and our export team will respond.',
     eyebrow: 'Contact',
     title: 'Contact Us',
-    titleZh: '联系我们',
+    subtitle: 'Sales, samples and export enquiries',
     description:
       'Send us your specification or drawing and our export team will get back to you. Verified contact details will be published here.',
     channelEmail: 'Email',

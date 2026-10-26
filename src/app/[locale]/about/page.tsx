@@ -129,7 +129,7 @@ export default async function AboutPage({ params }: AboutPageProps) {
       <PageHero
         eyebrow={heroSection?.eyebrow ?? m.about.eyebrow}
         title={heroSection?.title ?? m.about.title}
-        {...(isDefaultLocale ? { titleZh: m.about.titleZh } : {})}
+        subtitle={m.about.subtitle}
         description={heroSection?.subtitle ?? heroSection?.body ?? m.about.description}
         actions={
           <>

@@ -111,7 +111,7 @@ function PublishedRecords({ records, locale }: { records: QualityRecord[]; local
 export default async function QualityPage({ params }: QualityPageProps) {
   const { locale: rawLocale } = await params;
   const locale = resolveLocale(rawLocale);
-  const { t, m, isDefaultLocale } = getI18n(locale);
+  const { t, m } = getI18n(locale);
 
   const [inspectionImages, packagingImages, certificateImages, certificates] = await Promise.all([
     getImages(['inspection']),
@@ -130,7 +130,7 @@ export default async function QualityPage({ params }: QualityPageProps) {
       <PageHero
         eyebrow={m.quality.eyebrow}
         title={m.quality.title}
-        {...(isDefaultLocale ? { titleZh: m.quality.titleZh } : {})}
+        subtitle={m.quality.subtitle}
         description={m.quality.description}
       />
 

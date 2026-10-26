@@ -87,7 +87,7 @@ export default async function FactoryPage({ params }: FactoryPageProps) {
       <PageHero
         eyebrow={m.factory.eyebrow}
         title={m.factory.title}
-        {...(isDefaultLocale ? { titleZh: m.factory.titleZh } : {})}
+        subtitle={m.factory.subtitle}
         description={m.factory.description}
       />
 

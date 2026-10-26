@@ -83,7 +83,7 @@ function buildPageHref(page: number, category?: BlogCategorySlug): string {
 export default async function BlogPage({ params, searchParams }: BlogPageProps) {
   const [{ locale: rawLocale }, query] = await Promise.all([params, searchParams]);
   const locale = resolveLocale(rawLocale);
-  const { t, m, isDefaultLocale } = getI18n(locale);
+  const { t, m } = getI18n(locale);
 
   const rawCategory = firstValue(query.category)?.trim();
   // 非法分类值收敛为"全部"，避免出现空结果页面
@@ -105,7 +105,7 @@ export default async function BlogPage({ params, searchParams }: BlogPageProps) 
       <PageHero
         eyebrow={m.blog.eyebrow}
         title={m.blog.title}
-        {...(isDefaultLocale ? { titleZh: m.blog.titleZh } : {})}
+        subtitle={m.blog.subtitle}
         description={m.blog.description}
         actions={
           <>

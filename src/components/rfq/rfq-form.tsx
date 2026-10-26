@@ -295,7 +295,7 @@ export function RfqForm({
         ) : null}
       </div>
 
-      {/* 提交区（按钮居中 + 双语按钮文案「发送邮件 / Send」） */}
+      {/* 提交区（按钮居中；按钮文案按当前语言取 rfq.submit） */}
       <div className="flex flex-col items-center gap-3">
         {status === 'success' ? (
           /* 成功提示内联展示：不去替换表单，让用户能确认自己提交的内容；
@@ -305,7 +305,7 @@ export function RfqForm({
           <>
             <p className="text-caption text-text-muted text-center">{t('rfq.privacy')}</p>
             <Button type="submit" size="lg" loading={submitting}>
-              {submitting ? t('rfq.submitting') : '发送邮件 / Send'}
+              {submitting ? t('rfq.submitting') : t('rfq.submit')}
             </Button>
           </>
         )}

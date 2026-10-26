@@ -158,7 +158,7 @@ function ApplicationBlock({
 export default async function ApplicationsPage({ params }: ApplicationsPageProps) {
   const { locale: rawLocale } = await params;
   const locale = resolveLocale(rawLocale);
-  const { t, m, isDefaultLocale } = getI18n(locale);
+  const { t, m } = getI18n(locale);
 
   const [items, allHaveImages] = await Promise.all([getApplications(), hasAllApplicationImages()]);
   const relatedProducts = await resolveProducts(collectProductSlugs(items));
@@ -168,7 +168,7 @@ export default async function ApplicationsPage({ params }: ApplicationsPageProps
       <PageHero
         eyebrow={m.applications.eyebrow}
         title={m.applications.title}
-        {...(isDefaultLocale ? { titleZh: m.applications.titleZh } : {})}
+        subtitle={m.applications.subtitle}
         description={m.applications.description}
         actions={
           <>

@@ -64,7 +64,7 @@ function primaryImageUrl(product: ProductListItem): string | null {
 export default async function ProductsPage({ params, searchParams }: ProductsPageProps) {
   const [{ locale: rawLocale }, query] = await Promise.all([params, searchParams]);
   const locale = resolveLocale(rawLocale);
-  const { t, m, isDefaultLocale } = getI18n(locale);
+  const { t, m } = getI18n(locale);
 
   const category = firstValue(query.category)?.trim() || undefined;
   const rawPage = Number(firstValue(query.page));
@@ -92,7 +92,7 @@ export default async function ProductsPage({ params, searchParams }: ProductsPag
       <PageHero
         eyebrow={m.products.eyebrow}
         title={m.products.title}
-        {...(isDefaultLocale ? { titleZh: m.products.titleZh } : {})}
+        subtitle={m.products.subtitle}
         description={m.products.description}
         actions={
           /* 产品图册入口：新窗口打开 /catalog（独立浏览页，见 src/app/catalog） */
