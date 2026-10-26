@@ -93,6 +93,18 @@ const nextConfig: NextConfig = {
     remotePatterns,
     dangerouslyAllowSVG: false,
     formats: ['image/webp'],
+    /**
+     * 优化后图片的缓存时长。
+     *
+     * Next 默认只有 60 秒：每过一分钟，浏览器与任何中间缓存都要回源重新校验
+     * `_next/image?...` 的产物，命中率极低，而且冷缓存时每次都要 sharp 重新编码。
+     * 本站图片是 UUID 命名的不可变对象（换图即换 URL），30 天足够安全。
+     *
+     * 保留 30 天而不是 1 年，是给 public 下的少量固定文件名留余地
+     * （logo、hero 这类可能同名覆盖的素材）——真要改成 1 年，
+     * 前提是这些素材也改成带哈希的文件名。
+     */
+    minimumCacheTTL: 2592000,
   },
 };
 

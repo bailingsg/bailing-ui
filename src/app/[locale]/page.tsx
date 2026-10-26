@@ -159,6 +159,27 @@ export default async function HomePage({ params }: HomePageProps) {
     <>
       {/* 首页 WebSite 结构化数据（Organization 由根布局输出） */}
       <WebSiteSchema locale={locale} />
+      {/*
+        Hero 背景图是 CSS background-image：浏览器必须先解析完 CSSOM 才会发起
+        这个请求，是全页**发现得最晚**的资源，而它恰恰压在首屏 LCP 上。
+        显式 preload 让它与 HTML 解析并行开跑；media 条件保证只下载当前断点
+        真正会用到的那一张，不会把两张都拉下来。两张都命中浏览器缓存后，
+        后续 CSS 里的 background-image 直接复用，不产生重复请求。
+      */}
+      <link
+        rel="preload"
+        as="image"
+        href="/images/hero-forest.webp"
+        media="(min-width: 768px)"
+        fetchPriority="high"
+      />
+      <link
+        rel="preload"
+        as="image"
+        href="/images/hero-forest-mobile.webp"
+        media="(max-width: 767px)"
+        fetchPriority="high"
+      />
       {/* Hero */}
       <section className="relative isolate overflow-hidden border-b border-border bg-surface">
         {/*

@@ -47,6 +47,15 @@ export interface ProductCardProps {
   href?: string;
   /** 动作文案（默认按语言取「查看详情」；仅用于读屏与悬浮提示） */
   ctaLabel?: string;
+  /**
+   * 响应式图片尺寸提示（透传给 next/image 的 sizes）。
+   *
+   * 默认按产品列表页的列数上限估算：`xl:grid-cols-4` → 25vw。
+   * 早期默认值统一取 33vw，宽屏四列时实际只占 25vw，等于每张图多下约
+   * 78% 的面积（宽度 33/25 = 1.32 倍，面积 1.32² ≈ 1.74）。
+   * 若把卡片用在三列或两列布局里，调用方传自己的 sizes 覆盖即可。
+   */
+  imageSizes?: string;
   className?: string;
   /** 当前语言（决定链接前缀与默认文案） */
   locale?: Locale;
@@ -60,6 +69,7 @@ export function ProductCard({
   badges = [],
   href = '/products',
   ctaLabel,
+  imageSizes = '(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw',
   className,
   locale = defaultLocale,
 }: ProductCardProps) {
@@ -83,6 +93,7 @@ export function ProductCard({
           alt={imageAlt ?? name}
           locale={locale}
           aspectRatio="4/3"
+          sizes={imageSizes}
           className="transition-transform duration-[var(--duration-slow)] ease-[var(--ease-standard)] group-hover:scale-[1.02]"
         />
       </CardMedia>

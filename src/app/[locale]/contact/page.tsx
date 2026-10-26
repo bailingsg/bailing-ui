@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import { Mail, Phone } from 'lucide-react';
 import { PageHero } from '@/components/layout/page-hero';
 import { Section, SectionHeader } from '@/components/layout/section';
@@ -252,11 +253,22 @@ export default async function ContactPage({ params, searchParams }: ContactPageP
                       aria-hidden="true"
                       className="pointer-events-none absolute inset-y-0 right-0 w-32 overflow-hidden border border-r-0 border-border bg-surface sm:w-36"
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element -- 前台员工头像走动态图床 URL，无需 next/image 优化 */}
-                      <img
+                      {/*
+                        原来这里是裸 <img>（理由写着「动态图床 URL 无需 next/image 优化」）。
+                        两个问题：裸 <img> 默认 eager，联系页有多少位员工就并发拉多少张
+                        原图——而原图是后端压缩后仍有 2000px 长边的大图（常见 150–400KB），
+                        却只显示在 128px 的方框里；同时它也不进 next/image 的格式协商，
+                        webp/avif 客户端拿不到更小的产物。
+                        改用 next/image 的 fill + lazy：按 128px 槽位取候选宽度（DPR2 → 256w），
+                        并进入滚动懒加载队列。容器已是 absolute，fill 可直接定位。
+                      */}
+                      <Image
                         src={contact.avatarUrl}
                         alt={contact.displayName}
-                        className="h-full w-full object-cover"
+                        fill
+                        sizes="(min-width: 640px) 144px, 128px"
+                        loading="lazy"
+                        className="object-cover"
                       />
                     </div>
                   ) : null}

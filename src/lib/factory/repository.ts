@@ -205,15 +205,22 @@ async function fetchApiImages(): Promise<FactoryImage[]> {
  * 无需在业务表里重复登记即可自动取到——媒体库里改用途即改页面图集。
  *
  * 用途 → 页面图片分类的映射（MediaUsage → ImageCategory）：
- *   · FACTORY     → factory    工厂全景 / 厂区
- *   · PRODUCTION  → production 生产车间 / 工序（与工厂图集同区展示）
- *   · LOADING     → loading    装车 / 发运
- *   · EXHIBITION  → exhibition 展会
+ *   · FACTORY     → factory    工厂全景 / 厂区   →「工厂与车间」板块
+ *   · PRODUCTION  → equipment  生产设备 / 工序   →「生产设备」板块
+ *   · LOADING     → loading    装车 / 发运       →「装柜发货」板块
+ *   · EXHIBITION  → exhibition 展会              →「参展记录」板块
  * 其余用途（产品 / 博客 / 证书 / 应用 / 站点 / 其它）不属于本页，忽略。
+ *
+ * ⚠️ 2026-10-26 调整：`PRODUCTION` 原先映射到 `production` 分类，与 `factory`
+ * 合并后统一进「工厂与车间」板块，导致「生产设备」板块**永远取不到媒体库的图**
+ * （`equipment` 分类只能来自 CMS 工厂分区登记图集）。现改为映射到 `equipment`，
+ * 让后台「生产」标签直达「生产设备」板块，与「工厂 → 工厂与车间」对齐。
+ * `production` 分类因此只由 CMS 分区登记图（sectionType=PRODUCTION，生产流程）填充，
+ * 仍归入「工厂与车间」板块，不受影响。
  * --------------------------------------------------------------------------*/
 const MEDIA_USAGE_TO_CATEGORY: Record<string, ImageCategory> = {
   FACTORY: 'factory',
-  PRODUCTION: 'production',
+  PRODUCTION: 'equipment',
   LOADING: 'loading',
   EXHIBITION: 'exhibition',
 };

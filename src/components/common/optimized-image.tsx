@@ -77,8 +77,23 @@ export function OptimizedImage({
   locale = defaultLocale,
 }: OptimizedImageProps) {
   const [failed, setFailed] = React.useState(false);
+  /**
+   * 加载完成淡入。
+   *
+   * 只做透明度过渡、不引入 blurDataURL 占位图——项目约定「不伪造图片素材」，
+   * 用占位图打底等于给每张图配一张假预览。底下的 bg-surface 已经是中性底色，
+   * 缺的只是「灰块 → 真图」那一下硬切，补 300ms 淡入即可。
+   */
+  const [loaded, setLoaded] = React.useState(false);
+  const imageRef = React.useRef<HTMLImageElement | null>(null);
   const { t } = getI18n(locale);
   const label = placeholderLabel ?? t('common.photoPending');
+
+  // 命中浏览器缓存时 onLoad 可能在 hydration 之前就触发完毕，之后不再回调；
+  // 挂载后补一次 complete 检查，避免这类图片永远停在 opacity-0。
+  React.useEffect(() => {
+    if (imageRef.current?.complete) setLoaded(true);
+  }, [src]);
 
   return (
     <div
@@ -90,14 +105,19 @@ export function OptimizedImage({
     >
       {src && !failed ? (
         <Image
+          ref={imageRef}
           src={src}
           alt={alt}
           fill
           sizes={sizes}
           priority={priority}
           loading={priority ? undefined : 'lazy'}
+          onLoad={() => setLoaded(true)}
           onError={() => setFailed(true)}
-          className="object-cover"
+          className={cn(
+            'object-cover transition-opacity duration-300 ease-out',
+            loaded ? 'opacity-100' : 'opacity-0',
+          )}
         />
       ) : (
         <ImagePlaceholder label={failed ? t('common.imageLoadFailed') : label} />
