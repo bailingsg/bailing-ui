@@ -35,6 +35,12 @@ export interface OptimizedImageProps {
   aspectRatio?: AspectRatio;
   /** 首屏图片设为 true 以取消懒加载并提升 LCP */
   priority?: boolean;
+  /**
+   * 图片填充方式（2026-10-26 新增）。
+   *  · cover（默认）—— 铺满容器、允许裁切，适合实景照片；
+   *  · contain —— 完整显示不裁切，适合证书 / 检测报告这类竖版文件。
+   */
+  objectFit?: 'cover' | 'contain';
   /** 响应式尺寸提示，默认按全宽卡片估算 */
   sizes?: string;
   className?: string;
@@ -71,6 +77,7 @@ export function OptimizedImage({
   alt,
   aspectRatio = '4/3',
   priority = false,
+  objectFit = 'cover',
   sizes = '(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw',
   className,
   placeholderLabel,
@@ -115,7 +122,8 @@ export function OptimizedImage({
           onLoad={() => setLoaded(true)}
           onError={() => setFailed(true)}
           className={cn(
-            'object-cover transition-opacity duration-300 ease-out',
+            objectFit === 'contain' ? 'object-contain' : 'object-cover',
+            'transition-opacity duration-300 ease-out',
             loaded ? 'opacity-100' : 'opacity-0',
           )}
         />

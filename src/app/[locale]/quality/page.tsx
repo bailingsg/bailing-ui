@@ -210,8 +210,16 @@ export default async function QualityPage({ params }: QualityPageProps) {
         {certificates.length > 0 ? (
           <PublishedRecords records={certificates} locale={locale} />
         ) : certificateImages.length > 0 ? (
-          /* 无已发布质量记录时，用媒体库「证书」用途的图片兜底（2026-10-26） */
-          <GalleryGrid className="mt-8" images={certificateImages} columns={3} locale={locale} />
+          /* 无已发布质量记录时，用媒体库「证书」用途的图片兜底（2026-10-26）。
+             证书多为 A4 竖版扫描件：3/4 竖框 + contain 完整显示，不裁切内容。 */
+          <GalleryGrid
+            className="mt-8"
+            images={certificateImages}
+            columns={3}
+            aspectRatio="3/4"
+            objectFit="contain"
+            locale={locale}
+          />
         ) : (
           <>
             <div className="mt-6 flex flex-wrap items-center gap-3">
