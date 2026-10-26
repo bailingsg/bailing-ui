@@ -205,11 +205,14 @@ async function fetchApiImages(): Promise<FactoryImage[]> {
  * 无需在业务表里重复登记即可自动取到——媒体库里改用途即改页面图集。
  *
  * 用途 → 页面图片分类的映射（MediaUsage → ImageCategory）：
- *   · FACTORY     → factory    工厂全景 / 厂区   →「工厂与车间」板块
- *   · PRODUCTION  → equipment  生产设备 / 工序   →「生产设备」板块
- *   · LOADING     → loading    装车 / 发运       →「装柜发货」板块
- *   · EXHIBITION  → exhibition 展会              →「参展记录」板块
- * 其余用途（产品 / 博客 / 证书 / 应用 / 站点 / 其它）不属于本页，忽略。
+ *   · FACTORY     → factory     工厂全景 / 厂区   →「工厂与车间」板块
+ *   · PRODUCTION  → equipment   生产设备 / 工序   →「生产设备」板块
+ *   · LOADING     → loading     装车 / 发运       →「装柜发货」板块
+ *   · EXHIBITION  → exhibition  展会              →「参展记录」板块
+ *   · INSPECTION  → inspection  检验过程照片      → 质量页「检验流程」
+ *   · PACKAGING   → packaging   包装品质照片      → 质量页「包装品质」
+ *   · CERTIFICATE → certificate 证书 / 检测报告   → 质量页「认证与报告」兜底
+ * 其余用途（文章 / 产品 / 应用 / 站点 / 其它）不属于这两页，忽略。
  *
  * ⚠️ 2026-10-26 调整：`PRODUCTION` 原先映射到 `production` 分类，与 `factory`
  * 合并后统一进「工厂与车间」板块，导致「生产设备」板块**永远取不到媒体库的图**
@@ -217,13 +220,24 @@ async function fetchApiImages(): Promise<FactoryImage[]> {
  * 让后台「生产」标签直达「生产设备」板块，与「工厂 → 工厂与车间」对齐。
  * `production` 分类因此只由 CMS 分区登记图（sectionType=PRODUCTION，生产流程）填充，
  * 仍归入「工厂与车间」板块，不受影响。
+ *
+ * ⚠️ 同日补：质量页的 inspection / packaging 两个图集此前**没有任何数据源**
+ * （媒体库无对应用途、质量记录也不产出图集），永远渲染 3 个「照片待补充」占位。
+ * 后端 MediaUsage 新增 INSPECTION / PACKAGING 后在此接上；CERTIFICATE 复用既有值，
+ * 质量页在没有已发布记录时以图片墙兜底。
  * --------------------------------------------------------------------------*/
 const MEDIA_USAGE_TO_CATEGORY: Record<string, ImageCategory> = {
   FACTORY: 'factory',
   PRODUCTION: 'equipment',
   LOADING: 'loading',
   EXHIBITION: 'exhibition',
+  INSPECTION: 'inspection',
+  PACKAGING: 'packaging',
+  CERTIFICATE: 'certificate',
 };
+
+/** 需要从媒体库聚合的全部用途（与上面映射的键一一对应） */
+const PAGE_MEDIA_USAGES = Object.keys(MEDIA_USAGE_TO_CATEGORY);
 
 /** 媒体库自动聚合图的排序基址（排在分区登记图之后） */
 const MEDIA_SORT_BASE = 5000;
@@ -242,19 +256,36 @@ interface ApiMediaItem {
 /**
  * 拉取媒体库中已按用途分类的图片（api 模式）。
  *
- * 只取与工厂页相关的四种用途；接口本身一次返回全部已分类媒体
- * （上限 48，按上传时间倒序）。数量截断不在这里做——由
- * `capLatest()` 在按分类查询时统一执行（工厂页预览 6 张 / 质量页 3 张）。
+ * **按用途分别查询**（2026-10-26 修）：此前一次 `/public/media?limit=48`
+ * 取「最近 48 条已分类媒体」再在前端过滤，而接口 `limit` 上限就是 48。
+ * 媒体库产品图一度占 143 张，工厂/质量图很容易被挤出这 48 条窗口，
+ * 表现为「后台上传了、前台就是不出图」。改为每个用途各查一次（上限 48/用途），
+ * 各用途互不挤占。
+ *
+ * 数量截断仍不在这里做——由 `capLatest()` 在按分类查询时统一执行
+ * （工厂页预览 6 张 / 质量页 3 张）。
  */
 async function fetchApiMediaImages(): Promise<FactoryImage[]> {
-  const response = await apiGet<{ items: ApiMediaItem[]; total: number }>(
-    '/public/media?limit=48',
-    { tags: [CmsTags.media], revalidate: CmsRevalidate.STABLE },
+  const responses = await Promise.all(
+    PAGE_MEDIA_USAGES.map((usage) =>
+      apiGet<{ items: ApiMediaItem[]; total: number }>(
+        `/public/media?usage=${encodeURIComponent(usage)}&limit=48`,
+        { tags: [CmsTags.media], revalidate: CmsRevalidate.STABLE },
+      ),
+    ),
   );
+
+  // 分用途查询后需重新归并，恢复「最新上传在前」的统一口径
+  const items = responses.flatMap((response) => response.items);
+  items.sort((a, b) => {
+    const diff = Date.parse(b.createdAt) - Date.parse(a.createdAt);
+    return diff !== 0 ? diff : a.id.localeCompare(b.id);
+  });
+
   const images: FactoryImage[] = [];
-  response.items.forEach((item, index) => {
+  items.forEach((item, index) => {
     const category = MEDIA_USAGE_TO_CATEGORY[item.usage];
-    if (!category) return; // 非工厂页用途
+    if (!category) return; // 不属于工厂页 / 质量页的用途
     images.push({
       id: `media-${item.id}`,
       url: item.url,

@@ -113,9 +113,11 @@ export default async function QualityPage({ params }: QualityPageProps) {
   const locale = resolveLocale(rawLocale);
   const { t, m, isDefaultLocale } = getI18n(locale);
 
-  const [inspectionImages, packagingImages, certificates] = await Promise.all([
+  const [inspectionImages, packagingImages, certificateImages, certificates] = await Promise.all([
     getImages(['inspection']),
     getImages(['packaging']),
+    // 媒体库「证书」用途：仅在没有任何已发布质量记录时兜底成图片墙
+    getImages(['certificate']),
     // demo 模式返回空数组（不发请求），页面展示"待补充"框架
     getQualityCertificates(),
   ]);
@@ -164,15 +166,16 @@ export default async function QualityPage({ params }: QualityPageProps) {
           stepLabel={m.quality.stepLabel}
           locale={locale}
         />
-        <GalleryGrid
-          className="mt-10"
-          images={inspectionImages}
-          columns={3}
-          placeholderCount={3}
-          locale={locale}
-          placeholderLabel={m.quality.inspectionPlaceholder}
-          emptyNotice={m.quality.inspectionEmptyNotice}
-        />
+        {/* 检验流程照片：无素材时整块隐藏（2026-10-26 用户要求），
+            不渲染占位瓦片——流程步骤本身已能表达内容，空框反而像故障。 */}
+        {inspectionImages.length > 0 ? (
+          <GalleryGrid
+            className="mt-10"
+            images={inspectionImages}
+            columns={3}
+            locale={locale}
+          />
+        ) : null}
       </Section>
 
       {/* 3. Quality Control */}
@@ -206,6 +209,9 @@ export default async function QualityPage({ params }: QualityPageProps) {
         />
         {certificates.length > 0 ? (
           <PublishedRecords records={certificates} locale={locale} />
+        ) : certificateImages.length > 0 ? (
+          /* 无已发布质量记录时，用媒体库「证书」用途的图片兜底（2026-10-26） */
+          <GalleryGrid className="mt-8" images={certificateImages} columns={3} locale={locale} />
         ) : (
           <>
             <div className="mt-6 flex flex-wrap items-center gap-3">
@@ -246,15 +252,15 @@ export default async function QualityPage({ params }: QualityPageProps) {
             </Card>
           ))}
         </div>
-        <GalleryGrid
-          className="mt-8"
-          images={packagingImages}
-          columns={3}
-          placeholderCount={3}
-          locale={locale}
-          placeholderLabel={m.quality.packagingPlaceholder}
-          emptyNotice={m.quality.packagingEmptyNotice}
-        />
+        {/* 包装品质照片：无素材时整块隐藏（2026-10-26 用户要求），与检验流程同口径 */}
+        {packagingImages.length > 0 ? (
+          <GalleryGrid
+            className="mt-8"
+            images={packagingImages}
+            columns={3}
+            locale={locale}
+          />
+        ) : null}
         <div className="mt-8">
           <Button asChild variant="outline">
             <LocaleLink locale={locale} href="/factory">
