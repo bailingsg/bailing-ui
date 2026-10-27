@@ -299,11 +299,17 @@ export const zhCN = {
     glanceBuyers: '服务客户',
     glanceBuyersValue: '家具厂、室内工程商、进口商、经销商',
     glanceFounded: '成立年份',
+    // 留空则该行不渲染（关于页「关键信息」）；填入即展示，如 '2012 年'
+    glanceFoundedValue: '',
     glanceCapacity: '厂区面积与产能',
+    // 留空则该行不渲染（关于页「关键信息」）；填入即展示，如 '厂区 20,000 ㎡，年产能 80,000 m³'
+    glanceCapacityValue: '',
     teamEyebrow: '我们的团队',
     teamTitle: '订单背后的人',
-    teamDescription: '生产、品质与出口协调均由内部团队负责，具体姓名与职位待确认后公布。',
-    teamEmptyNotice: '团队照片待业务方提供后补充。',
+    // 本区块展示的是「可接单」的同事（账号启用 + 询盘联系人 + 公开展示），
+    // 姓名 / 职位 / 头像全部来自后台「员工联系方式」，不再有静态占位照片
+    teamDescription: '从规格确认、排产到装柜出运，这些同事直接对接您的订单。',
+    teamEmptyNotice: '对接同事的信息正在补充，稍后在此展示。',
     philosophyEyebrow: '经营理念',
     philosophyTitle: '我们如何对待这项工作',
     philosophyDescription: '决定规格如何确认、如何生产、如何发运的四条原则。',
@@ -423,7 +429,6 @@ export const zhCN = {
     overviewNote:
       '在业务方确认之前，页面不展示任何数字（厂房面积、产量、人数或设备数量），以确保海外买家看到的始终是准确信息。',
     contactTeam: '联系我们的团队',
-    overviewPhotoTitle: '工厂全景照片',
     galleryEyebrow: '图集',
     galleryTitle: '工厂与车间',
     galleryDescription: '生产基地、车间与产线的照片将在此展示。',

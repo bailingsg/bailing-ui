@@ -319,12 +319,18 @@ export const en = {
     glanceBuyers: 'Buyers served',
     glanceBuyersValue: 'Furniture makers, interior contractors, importers, distributors',
     glanceFounded: 'Founding year',
+    // 留空则该行不渲染（关于页「关键信息」）；填入即展示
+    glanceFoundedValue: '',
     glanceCapacity: 'Plant area & capacity',
+    // 留空则该行不渲染（关于页「关键信息」）；填入即展示
+    glanceCapacityValue: '',
     teamEyebrow: 'Our Team',
     teamTitle: 'The people behind the orders',
+    // Same block as the Chinese site: populated from the employee contact records
+    // that can actually take an order (active account + lead contact + shown on site)
     teamDescription:
-      'Production, quality and export coordination are handled in-house. Individual names and roles will be published once confirmed.',
-    teamEmptyNotice: 'Team photography will be added here once supplied.',
+      'From specification and scheduling through to container loading, these are the colleagues who handle your order directly.',
+    teamEmptyNotice: 'Team details are being finalised and will be listed here shortly.',
     philosophyEyebrow: 'Philosophy',
     philosophyTitle: 'How we approach the work',
     philosophyDescription:
@@ -465,7 +471,6 @@ export const en = {
     overviewNote:
       'No figures (floor area, output, headcount or equipment count) are displayed until they are confirmed by the business, so that overseas buyers always see accurate information.',
     contactTeam: 'Contact Our Team',
-    overviewPhotoTitle: 'Factory overview photo',
     galleryEyebrow: 'Gallery',
     galleryTitle: 'Factory & workshop',
     galleryDescription:

@@ -3,7 +3,7 @@ import { PageHero } from '@/components/layout/page-hero';
 import { Section, SectionHeader } from '@/components/layout/section';
 import { ContentPlaceholder } from '@/components/layout/content-placeholder';
 import { CtaBand } from '@/components/layout/cta-band';
-import { GalleryGrid } from '@/components/media/gallery-grid';
+import { TeamMembers } from '@/components/contacts/team-members';
 import { OptimizedImage } from '@/components/common/optimized-image';
 import { ContentFallbackNotice } from '@/components/common/content-fallback-notice';
 import { WebPageSchema } from '@/components/seo/web-page-schema';
@@ -19,11 +19,8 @@ import { LocaleLink } from '@/i18n/link';
 import { getI18n } from '@/i18n';
 import { defaultLocale, isLocale, type Locale } from '@/i18n/config';
 import { localizedPath } from '@/i18n/paths';
-import {
-  getAboutImagesByCategory,
-  hasAnyAboutImage,
-  type AboutImageCategory,
-} from '@/lib/about';
+import { getAboutImagesByCategory, hasAnyAboutImage, type AboutImageCategory } from '@/lib/about';
+import { getPublicTeam } from '@/lib/contacts';
 
 /**
  * 关于我们 /about（中文：/zh-CN/about）
@@ -44,6 +41,18 @@ import {
 interface AboutPageProps {
   params: Promise<{ locale: string }>;
 }
+
+/**
+ * 本页必须动态渲染（2026-10-27）。
+ *
+ * 原因：「订单背后的人」读的是员工联系方式（no-store 实时数据），后台改头像 / 姓名 /
+ * 职位后必须立刻反映。页面一旦被当成静态路由预渲染，Next 会在 build 阶段遇到
+ * `revalidate: 0` 的 fetch 直接抛错退出（实测 /zh-CN/about prerender error）。
+ *
+ * 其余分区（CMS site_sections、图片素材）仍各自走自己的 ISR 缓存，
+ * 这里只是不再把整页结果固化下来。
+ */
+export const dynamic = 'force-dynamic';
 
 function resolveLocale(rawLocale: string): Locale {
   return isLocale(rawLocale) ? rawLocale : defaultLocale;
@@ -87,10 +96,12 @@ export default async function AboutPage({ params }: AboutPageProps) {
   const locale = resolveLocale(rawLocale);
   const { t, m, isDefaultLocale } = getI18n(locale);
 
-  const [companyImages, teamImages, hasFactoryImages, hasExhibitionImages, hasOfficeImages, sections] =
+  const [companyImages, teamMembers, hasFactoryImages, hasExhibitionImages, hasOfficeImages, sections] =
     await Promise.all([
       getAboutImagesByCategory('company'),
-      getAboutImagesByCategory('team'),
+      // 「订单背后的人」= 可接单员工（账号启用 + 询盘联系人 + 公开展示），
+      // 与联系页共用同一份公开契约，后台改头像后本区块立即跟随
+      getPublicTeam(),
       hasAnyAboutImage(['factory']),
       hasAnyAboutImage(['exhibition']),
       hasAnyAboutImage(['office']),
@@ -123,6 +134,20 @@ export default async function AboutPage({ params }: AboutPageProps) {
     exhibition: m.about.noteExhibition,
     office: m.about.noteOffice,
   };
+
+  /**
+   * 「关键信息」表：值为空（或仅空白）的行直接不渲染，
+   * 避免未确认信息以「待补充」占位长期挂在前台。
+   * 文案来源见 src/i18n/messages/{zh-CN,en}.ts 的 glanceXxxValue。
+   */
+  const glanceRows = [
+    { label: m.about.glanceBusiness, value: m.about.glanceBusinessValue },
+    { label: m.about.glanceLocation, value: m.about.glanceLocationValue },
+    { label: m.about.glanceMaterials, value: m.about.glanceMaterialsValue },
+    { label: m.about.glanceBuyers, value: m.about.glanceBuyersValue },
+    { label: m.about.glanceFounded, value: m.about.glanceFoundedValue },
+    { label: m.about.glanceCapacity, value: m.about.glanceCapacityValue },
+  ].filter((row) => row.value.trim().length > 0);
 
   return (
     <>
@@ -210,59 +235,41 @@ export default async function AboutPage({ params }: AboutPageProps) {
 
             <aside className="lg:col-span-1">
               <h2 className="text-heading-sm">{m.common.atAGlance}</h2>
-              <dl className="mt-4 flex flex-col divide-y divide-border rounded-lg border border-border bg-surface-elevated px-5">
-                {[
-                  { label: m.about.glanceBusiness, value: m.about.glanceBusinessValue, muted: false },
-                  { label: m.about.glanceLocation, value: m.about.glanceLocationValue, muted: false },
-                  { label: m.about.glanceMaterials, value: m.about.glanceMaterialsValue, muted: false },
-                  { label: m.about.glanceBuyers, value: m.about.glanceBuyersValue, muted: false },
-                  {
-                    label: m.about.glanceFounded,
-                    value: isDefaultLocale ? siteConfig.placeholderText : siteConfig.placeholderTextZh,
-                    muted: true,
-                  },
-                  {
-                    label: m.about.glanceCapacity,
-                    value: isDefaultLocale ? siteConfig.placeholderText : siteConfig.placeholderTextZh,
-                    muted: true,
-                  },
-                ].map((row) => (
-                  <div key={row.label} className="flex flex-col gap-1 py-3">
-                    <dt className="text-caption font-semibold tracking-wider text-text-muted uppercase">
-                      {row.label}
-                    </dt>
-                    <dd className={row.muted ? 'text-small text-text-muted' : 'text-small text-foreground'}>
-                      {row.value}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
+              {glanceRows.length > 0 ? (
+                <dl className="mt-4 flex flex-col divide-y divide-border rounded-lg border border-border bg-surface-elevated px-5">
+                  {glanceRows.map((row) => (
+                    <div key={row.label} className="flex flex-col gap-1 py-3">
+                      <dt className="text-caption font-semibold tracking-wider text-text-muted uppercase">
+                        {row.label}
+                      </dt>
+                      <dd className="text-small text-foreground">{row.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              ) : null}
             </aside>
-          </div>
-
-          {/* 团队 */}
-          <div className="mt-14 flex flex-col gap-6">
-            <SectionHeader
-              eyebrow={m.about.teamEyebrow}
-              title={m.about.teamTitle}
-              description={m.about.teamDescription}
-            />
-            <GalleryGrid
-              images={teamImages}
-              columns={4}
-              aspectRatio="3/4"
-              placeholderCount={8}
-              locale={locale}
-              placeholderLabel={t('common.photoPending')}
-              showCaption={false}
-              emptyNotice={m.about.teamEmptyNotice}
-              sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
-            />
           </div>
         </Section>
       )}
 
-      {/* 3. Business Philosophy */}
+      {/*
+        3. 订单背后的人（可接单员工）
+        独立于 CMS story 分区：英文站一旦发布了 about.story，团队区块原先会整块消失。
+        数据来自公开联系人接口的 leadOnly 视图，因此「后台改头像 → 前台立即更新」，
+        不再依赖 lib/about 里那份静态 team 图片登记表。
+      */}
+      <Section>
+        <SectionHeader
+          eyebrow={m.about.teamEyebrow}
+          title={m.about.teamTitle}
+          description={m.about.teamDescription}
+        />
+        <div className="mt-8">
+          <TeamMembers members={teamMembers} emptyNotice={m.about.teamEmptyNotice} />
+        </div>
+      </Section>
+
+      {/* 4. Business Philosophy */}
       {philosophySection ? (
         <SiteSectionBlock section={philosophySection} locale={locale} />
       ) : (
@@ -285,7 +292,7 @@ export default async function AboutPage({ params }: AboutPageProps) {
         </Section>
       )}
 
-      {/* 4. Why Choose Bailing */}
+      {/* 5. Why Choose Bailing */}
       {whySection ? (
         <SiteSectionBlock section={whySection} tone="surface" locale={locale} />
       ) : (
@@ -309,7 +316,7 @@ export default async function AboutPage({ params }: AboutPageProps) {
         </Section>
       )}
 
-      {/* 5. Products & Solutions */}
+      {/* 6. Products & Solutions */}
       {solutionsSection ? (
         <SiteSectionBlock section={solutionsSection} locale={locale} />
       ) : (
@@ -345,7 +352,7 @@ export default async function AboutPage({ params }: AboutPageProps) {
         </Section>
       )}
 
-      {/* 6. Global Market */}
+      {/* 7. Global Market */}
       <Section tone="surface">
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:items-start">
           <div className="flex flex-col gap-5">
@@ -382,7 +389,7 @@ export default async function AboutPage({ params }: AboutPageProps) {
         </div>
       </Section>
 
-      {/* 7. Factory / Quality CTA */}
+      {/* 8. Factory / Quality CTA */}
       <Section>
         <SectionHeader
           eyebrow={m.about.deeperEyebrow}
@@ -433,7 +440,7 @@ export default async function AboutPage({ params }: AboutPageProps) {
         ) : null}
       </Section>
 
-      {/* 8. RFQ CTA */}
+      {/* 9. RFQ CTA */}
       <CtaBand
         locale={locale}
         title={m.about.ctaTitle}

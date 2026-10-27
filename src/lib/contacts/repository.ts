@@ -1,4 +1,4 @@
-import { apiGet, isApiSource } from '@/lib/cms-api';
+import { apiGet, isApiSource, qs } from '@/lib/cms-api';
 import { CmsRevalidate, CmsTags } from '@/lib/cms-tags';
 import type { PublicContact } from './types';
 
@@ -15,10 +15,25 @@ import type { PublicContact } from './types';
  *
  * 公开接口返回数组（非分页包裹）。
  */
-export async function getPublicContacts(): Promise<PublicContact[]> {
+export interface GetPublicContactsOptions {
+  /**
+   * 只取「可接单」的人（2026-10-27 追加）。
+   *
+   * 后端判定与询盘轮转准入逐条一致：账号启用 && 勾选「询盘联系人」（isLeadContact），
+   * 并叠加「公开展示」开关 —— 可接单但没勾公开展示的员工，前台不得露出。
+   *
+   * 关于页「订单背后的人」用这个开关；联系页仍取全量公开展示员工。
+   */
+  leadOnly?: boolean;
+}
+
+export async function getPublicContacts(
+  options: GetPublicContactsOptions = {},
+): Promise<PublicContact[]> {
   if (!isApiSource()) return [];
 
-  const items = await apiGet<PublicContact[]>('/public/contacts', {
+  const query = options.leadOnly ? qs({ leadOnly: true }) : '';
+  const items = await apiGet<PublicContact[]>(`/public/contacts${query}`, {
     tags: [CmsTags.contacts],
     revalidate: CmsRevalidate.REALTIME,
   });
@@ -26,4 +41,12 @@ export async function getPublicContacts(): Promise<PublicContact[]> {
     if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
     return a.displayName.localeCompare(b.displayName);
   });
+}
+
+/**
+ * 「订单背后的人」——可接单人员的公开档案（头像 / 姓名 / 职位）。
+ * 与联系页共用同一份公开契约，因此后台改头像后两边同时生效。
+ */
+export async function getPublicTeam(): Promise<PublicContact[]> {
+  return getPublicContacts({ leadOnly: true });
 }
