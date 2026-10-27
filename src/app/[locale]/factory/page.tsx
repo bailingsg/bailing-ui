@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { PageHero } from '@/components/layout/page-hero';
 import { Section, SectionHeader } from '@/components/layout/section';
-import { ContentPlaceholder } from '@/components/layout/content-placeholder';
 import { CtaBand } from '@/components/layout/cta-band';
 import { FactoryGallery } from '@/components/media/factory-gallery';
 import { ProcessFlow } from '@/components/common/process-flow';
@@ -91,40 +90,32 @@ export default async function FactoryPage({ params }: FactoryPageProps) {
         description={m.factory.description}
       />
 
-      {/* 1. Factory Introduction */}
+      {/* 1. Factory Introduction（单栏：原右侧「工厂全景照片」占位模块已去除） */}
       <Section>
-        <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:items-center">
-          <div className="flex flex-col gap-4">
-            <SectionHeader
-              eyebrow={m.factory.overviewEyebrow}
-              title={overview?.title ?? m.factory.overviewTitle}
-              description={overview?.summary ?? m.factory.overviewDescription}
-            />
-            {overview?.content ? (
-              <>
-                <p className="text-body text-text-secondary text-pretty whitespace-pre-line">
-                  {overview.content}
-                </p>
-                <ContentFallbackNotice locale={locale} />
-              </>
-            ) : (
-              <p className="text-body text-text-secondary">{m.factory.overviewPending}</p>
-            )}
-            <p className="text-small text-text-muted">{m.factory.overviewNote}</p>
-            <div>
-              <Button asChild variant="outline">
-                <LocaleLink locale={locale} href="/contact">
-                  {m.factory.contactTeam}
-                </LocaleLink>
-              </Button>
-            </div>
-          </div>
-          <ContentPlaceholder
-            locale={locale}
-            title={m.factory.overviewPhotoTitle}
-            note={t('common.photoPending')}
-            minHeightClass="min-h-72"
+        <div className="flex max-w-3xl flex-col gap-4">
+          <SectionHeader
+            eyebrow={m.factory.overviewEyebrow}
+            title={overview?.title ?? m.factory.overviewTitle}
+            description={overview?.summary ?? m.factory.overviewDescription}
           />
+          {overview?.content ? (
+            <>
+              <p className="text-body text-text-secondary text-pretty whitespace-pre-line">
+                {overview.content}
+              </p>
+              <ContentFallbackNotice locale={locale} />
+            </>
+          ) : (
+            <p className="text-body text-text-secondary">{m.factory.overviewPending}</p>
+          )}
+          <p className="text-small text-text-muted">{m.factory.overviewNote}</p>
+          <div>
+            <Button asChild variant="outline">
+              <LocaleLink locale={locale} href="/contact">
+                {m.factory.contactTeam}
+              </LocaleLink>
+            </Button>
+          </div>
         </div>
       </Section>
 
