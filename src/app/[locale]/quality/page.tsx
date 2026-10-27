@@ -4,6 +4,7 @@ import { Section, SectionHeader } from '@/components/layout/section';
 import { ContentPlaceholder } from '@/components/layout/content-placeholder';
 import { CtaBand } from '@/components/layout/cta-band';
 import { GalleryGrid } from '@/components/media/gallery-grid';
+import { RecordFileLink } from '@/components/quality/record-file-link';
 import { ProcessFlow } from '@/components/common/process-flow';
 import { WebPageSchema } from '@/components/seo/web-page-schema';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -92,14 +93,12 @@ function PublishedRecords({ records, locale }: { records: QualityRecord[]; local
               </span>
             ) : null}
             {record.file ? (
-              <a
-                href={record.file.url}
-                className="text-primary underline underline-offset-4 transition-colors hover:text-primary-hover"
-                {...(record.file.isDocument ? { download: true } : {})}
-                rel="noopener noreferrer"
-              >
-                {m.quality.recordViewDocument}
-              </a>
+              <RecordFileLink
+                file={record.file}
+                label={m.quality.recordViewDocument}
+                title={record.title}
+                locale={locale}
+              />
             ) : null}
           </div>
         </Card>
