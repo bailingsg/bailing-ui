@@ -14,12 +14,18 @@ export interface ContentFallbackNoticeProps {
   locale: Locale;
   /** banner：独立提示条；subtle：一行小字（用于首屏，避免压过主视觉） */
   variant?: 'banner' | 'subtle';
+  /**
+   * 配色语境（2026-10-29 加）：默认深色字配浅底；
+   * onDark 用于压在照片/深色区块上的场景（如首页 hero），否则深灰字会读不清。
+   */
+  tone?: 'default' | 'onDark';
   className?: string;
 }
 
 export function ContentFallbackNotice({
   locale,
   variant = 'banner',
+  tone = 'default',
   className,
 }: ContentFallbackNoticeProps) {
   if (locale === defaultLocale) return null;
@@ -27,13 +33,22 @@ export function ContentFallbackNotice({
   const { t } = getI18n(locale);
 
   if (variant === 'subtle') {
+    const onDark = tone === 'onDark';
     return (
       <p
         role="note"
         lang="en"
-        className={['text-caption text-text-muted', className ?? ''].filter(Boolean).join(' ')}
+        className={[
+          'text-caption',
+          onDark ? 'text-white/70' : 'text-text-muted',
+          className ?? '',
+        ]
+          .filter(Boolean)
+          .join(' ')}
       >
-        <span className="font-medium text-text-secondary">{t('contentFallback.badge')}：</span>
+        <span className={onDark ? 'font-medium text-white/90' : 'font-medium text-text-secondary'}>
+          {t('contentFallback.badge')}：
+        </span>
         {t('contentFallback.notice')}
       </p>
     );

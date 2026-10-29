@@ -197,13 +197,14 @@ export default async function HomePage({ params }: HomePageProps) {
           style={{ backgroundImage: "url('/images/hero-forest.webp')" }}
         />
         {/*
-          可读性遮罩：左侧几乎实色（承载深色标题与正文），向右逐渐透出画面。
-          没有这层遮罩，深色文字压在树影上会读不清。
+          2026-10-29 业务方要求露出完整照片：原「左侧实色 → 右侧透明」的白色渐变遮罩已移除。
+          但照片本身明暗不均（树干深、草地亮），深色文字直接压上去会读不清，
+          因此改为**一层均匀的轻暗化 + 白色文字**：
+            · 暗化是整幅均匀的，不产生白雾或左右断层，照片保持完整；
+            · 文字转白后在高光草地与深色树干上都有足够对比度。
+          若以后换更亮/更暗的照片，只调 bg-black/NN 的数值即可，不要恢复渐变白雾。
         */}
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 -z-10 bg-linear-to-r from-surface from-40% via-surface/85 via-55% to-surface/55 md:from-45% md:via-surface/60 md:via-72% md:to-transparent"
-        />
+        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-black/35" />
         <Container className="py-16 sm:py-20 lg:py-28">
           {heroSection ? (
             /* CMS 模式：结构化 hero 分区（业务内容，单语言） */
@@ -213,16 +214,16 @@ export default async function HomePage({ params }: HomePageProps) {
                   {heroSection.eyebrow}
                 </Badge>
               ) : null}
-              <h1 className="text-display text-balance">
+              <h1 className="text-display text-balance text-white">
                 {heroSection.title ?? siteConfig.name}
               </h1>
               {heroSection.subtitle ? (
-                <p className="text-heading-sm font-normal text-text-muted">
+                <p className="text-heading-sm font-normal text-white/85">
                   {heroSection.subtitle}
                 </p>
               ) : null}
               {heroSection.body ? (
-                <p className="max-w-2xl text-body-lg text-text-secondary text-pretty">
+                <p className="max-w-2xl text-body-lg text-white/90 text-pretty">
                   {heroSection.body}
                 </p>
               ) : null}
@@ -259,7 +260,7 @@ export default async function HomePage({ params }: HomePageProps) {
                   />
                 </div>
               ) : null}
-              <ContentFallbackNotice locale={locale} variant="subtle" className="mt-1" />
+              <ContentFallbackNotice locale={locale} variant="subtle" tone="onDark" className="mt-1" />
             </div>
           ) : (
             /* 演示模式 / 未发布 hero：按语言呈现框架文案 */
@@ -268,15 +269,15 @@ export default async function HomePage({ params }: HomePageProps) {
                 {t('home.heroBadge')}
               </Badge>
               {/* 英文页主标题用英文品牌名 + 中文品牌副行；中文页主标题用中文品牌名 */}
-              <h1 className="text-display text-balance">
+              <h1 className="text-display text-balance text-white">
                 {isDefaultLocale ? siteConfig.name : siteConfig.nameZh}
               </h1>
-              <p className="text-heading-sm font-normal text-text-muted">
+              <p className="text-heading-sm font-normal text-white/85">
                 {isDefaultLocale
                   ? `${siteConfig.nameZh} · ${siteConfig.taglineZh}`
                   : siteConfig.taglineZh}
               </p>
-              <p className="max-w-2xl text-body-lg text-text-secondary text-pretty">
+              <p className="max-w-2xl text-body-lg text-white/90 text-pretty">
                 {isDefaultLocale ? siteConfig.description : siteConfig.descriptionZh}
               </p>
               <div className="flex flex-wrap items-center gap-3">
