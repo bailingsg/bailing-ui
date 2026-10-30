@@ -176,7 +176,7 @@ export const zhCN = {
     eyebrow: '产品',
     title: '木制产品',
     subtitle: '家具、室内与包装用板材',
-    description: '产品分类、规格与参数表将在此发布，下方可按分类筛选与浏览。',
+    description: '浏览我们的木质板材全系列 —— 按分类筛选，或按产品名称、材料与关键词搜索，找到适合您用途的板材。',
     badgeOem: 'OEM / ODM',
     badgeSourcing: '可持续采购',
     filterLabel: '分类',

@@ -184,7 +184,7 @@ export const en = {
     title: 'Wooden Products',
     subtitle: 'Panels & boards for furniture, interiors and packaging',
     description:
-      'Product categories, specifications and datasheets will be published here. Filtering and search are available below.',
+      'Browse our full range of wooden panels and boards — filter by category or search by product name, material or keyword to find the right board for your application.',
     badgeOem: 'OEM / ODM',
     badgeSourcing: 'Sustainable Sourcing',
     filterLabel: 'Category',
