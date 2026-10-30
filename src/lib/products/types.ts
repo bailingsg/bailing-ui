@@ -76,4 +76,6 @@ export interface ProductQuery {
   pageSize?: number;
   category?: string;
   featured?: boolean;
+  /** 关键词搜索（名称 / 简述 / 材质），与 category 为 AND 关系 */
+  search?: string;
 }

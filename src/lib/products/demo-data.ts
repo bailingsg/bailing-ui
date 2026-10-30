@@ -119,12 +119,13 @@ function toListItem(product: ProductDetail): ProductListItem {
   };
 }
 
-/** 以内存数据模拟分页 / 过滤，行为与后端 API 保持一致 */
+/** 以内存数据模拟分页 / 过滤 / 搜索，行为与后端 API 保持一致 */
 export function queryDemoProducts(query: {
   page?: number;
   pageSize?: number;
   category?: string;
   featured?: boolean;
+  search?: string;
 }): PaginatedProducts {
   const page = Math.max(1, query.page ?? 1);
   const pageSize = Math.min(48, Math.max(1, query.pageSize ?? 12));
@@ -135,6 +136,15 @@ export function queryDemoProducts(query: {
   }
   if (query.featured !== undefined) {
     rows = rows.filter((item) => item.featured === query.featured);
+  }
+  // 与后端一致：名称 / 简述 / 材质 / slug，大小写不敏感
+  const keyword = query.search?.trim().toLowerCase();
+  if (keyword) {
+    rows = rows.filter((item) =>
+      [item.name, item.shortDescription, item.material, item.slug]
+        .filter((value): value is string => typeof value === 'string')
+        .some((value) => value.toLowerCase().includes(keyword)),
+    );
   }
   rows.sort((a, b) => {
     if (a.featured !== b.featured) return a.featured ? -1 : 1;

@@ -148,6 +148,38 @@ function SpecRow({ label, value }: { label: string; value: string }) {
   );
 }
 
+/**
+ * 规格表清理（2026-10-30）
+ *
+ * 产品 specifications 是从旧阿里后台整包导入的属性字典，直接 Object.entries 渲染会
+ * 出现两类问题（对比报告「产品详情」一项）：
+ *   1. 与顶部「关键属性」重复的字段（Material / Application）出现两行，且取值可能
+ *      不一致（顶部显示「—」、规格表显示 Hotel），看起来像标签和值错位；
+ *   2. 平台招商属性（如 Project Solution Capability = Graphic Design）混进规格表，
+ *      买家看到的是一行看不懂的字段名。
+ *
+ * 处理方式：重复字段统一在顶部展示（取有值的一方），规格表只保留真正的规格项；
+ * 纯平台字段直接不展示。数据本身不做删改，后台仍可见。
+ */
+const AT_A_GLANCE_KEYS = new Set(['material', 'application', 'applications', 'category']);
+
+/** 平台属性：不是产品规格，展示出来只会让买家困惑 */
+const NON_SPEC_KEYS = new Set(['project solution capability']);
+
+/** 按不区分大小写从规格字典里取第一个命中的值（用于补全顶部关键属性） */
+function pickSpecValue(
+  specifications: Record<string, string> | null,
+  keys: readonly string[],
+): string | undefined {
+  if (!specifications) return undefined;
+  for (const [key, value] of Object.entries(specifications)) {
+    if (keys.includes(key.trim().toLowerCase()) && typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+  }
+  return undefined;
+}
+
 export default async function ProductDetailPage({ params }: ProductDetailPageProps) {
   const { locale: rawLocale, slugId } = await params;
   const locale = resolveLocale(rawLocale);
@@ -168,9 +200,22 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
   }
 
   const related = await getRelatedProducts(product);
-  const specificationEntries = product.specifications
-    ? Object.entries(product.specifications)
-    : [];
+
+  /**
+   * 关键属性取值：产品主字段优先，缺失时回落到规格字典里的同名字段
+   * （旧数据里 application 常为空、真正的用途只存在于 specifications.Application）。
+   */
+  const materialValue =
+    product.material?.trim() || pickSpecValue(product.specifications, ['material', 'main material']);
+  const applicationValue =
+    product.application?.trim() || pickSpecValue(product.specifications, ['application', 'usage']);
+
+  const specificationEntries = (product.specifications ? Object.entries(product.specifications) : [])
+    .filter(([label]) => {
+      const key = label.trim().toLowerCase();
+      return !AT_A_GLANCE_KEYS.has(key) && !NON_SPEC_KEYS.has(key);
+    })
+    .filter(([, value]) => typeof value === 'string' && value.trim().length > 0);
   /** 后台 CMS「应用标签」；未配置时为空数组（不展示，不伪造） */
   const applicationTags = product.applications ?? [];
   const productPath = localizedPath(productDetailPath(product), locale);
@@ -235,22 +280,22 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
               <ContentFallbackNotice locale={locale} />
 
               {/* 关键属性（未配置时不展示，不编造） */}
-              {product.material || product.application || applicationTags.length > 0 ? (
+              {materialValue || applicationValue || applicationTags.length > 0 ? (
                 <dl className="flex flex-col gap-3 border-y border-border py-4">
-                  {product.material ? (
+                  {materialValue ? (
                     <div className="flex gap-3">
                       <dt className="w-32 shrink-0 text-small font-medium text-text-muted">
                         {m.productDetail.materialTitle}
                       </dt>
-                      <dd className="text-small text-foreground">{product.material}</dd>
+                      <dd className="text-small text-foreground">{materialValue}</dd>
                     </div>
                   ) : null}
-                  {product.application ? (
+                  {applicationValue ? (
                     <div className="flex gap-3">
                       <dt className="w-32 shrink-0 text-small font-medium text-text-muted">
                         {m.common.application}
                       </dt>
-                      <dd className="text-small text-foreground">{product.application}</dd>
+                      <dd className="text-small text-foreground">{applicationValue}</dd>
                     </div>
                   ) : null}
                   {applicationTags.length > 0 ? (
@@ -325,14 +370,12 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
             <h2 className="text-heading-sm">{m.common.atAGlance}</h2>
             <dl className="mt-4 flex flex-col">
               <SpecRow label={m.common.category} value={product.category?.name ?? m.common.noValue} />
-              <SpecRow
-                label={m.productDetail.materialTitle}
-                value={product.material ?? m.common.noValue}
-              />
-              <SpecRow
-                label={m.common.application}
-                value={product.application ?? m.common.noValue}
-              />
+              {materialValue ? (
+                <SpecRow label={m.productDetail.materialTitle} value={materialValue} />
+              ) : null}
+              {applicationValue ? (
+                <SpecRow label={m.common.application} value={applicationValue} />
+              ) : null}
               {applicationTags.length > 0 ? (
                 <SpecRow
                   label={m.productDetail.applicationsTitle}
@@ -374,8 +417,8 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface-elevated p-6">
             <h2 className="text-heading-sm">{m.productDetail.materialTitle}</h2>
-            {product.material ? (
-              <p className="text-small text-text-secondary">{product.material}</p>
+            {materialValue ? (
+              <p className="text-small text-text-secondary">{materialValue}</p>
             ) : (
               <p className="text-small text-text-muted">{m.productDetail.materialMissing}</p>
             )}
@@ -390,8 +433,8 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
                   </li>
                 ))}
               </ul>
-            ) : product.application ? (
-              <p className="text-small text-text-secondary">{product.application}</p>
+            ) : applicationValue ? (
+              <p className="text-small text-text-secondary">{applicationValue}</p>
             ) : (
               <p className="text-small text-text-muted">{m.productDetail.applicationMissing}</p>
             )}

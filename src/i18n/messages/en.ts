@@ -112,6 +112,13 @@ export const en = {
       'Bailing Wooden manufactures wooden products for B2B buyers — OEM & ODM production to your drawings, export documentation and shipment support.',
     heroBadge: 'B2B Wooden Products Manufacturer',
     exploreProducts: 'Explore Products',
+    /** 首页主视觉轮播（2026-10-30，先在 /dashboard2 验证） */
+    carouselLabel: 'Homepage highlights',
+    carouselSlideOf: 'Slide {index} of {total}',
+    carouselPrev: 'Previous slide',
+    carouselNext: 'Next slide',
+    carouselPlay: 'Play slideshow',
+    carouselPause: 'Pause slideshow',
     capabilitiesEyebrow: 'Capabilities',
     capabilitiesTitle: 'What we do',
     capabilitiesDescription:
@@ -181,6 +188,14 @@ export const en = {
     badgeOem: 'OEM / ODM',
     badgeSourcing: 'Sustainable Sourcing',
     filterLabel: 'Category',
+    searchLabel: 'Search products',
+    searchPlaceholder: 'Search by product name, material or keyword',
+    searchButton: 'Search',
+    searchClear: 'Clear',
+    searchResultsFor: 'Search results for “{query}”',
+    emptySearchTitle: 'No products match your search',
+    emptySearchNote:
+      'Try a shorter keyword (for example “melamine” or “plywood”), or clear the search to browse all products.',
     catalogEyebrow: 'Catalog',
     allProducts: 'All products',
     allProductsDescription:
@@ -462,7 +477,7 @@ export const en = {
     title: 'Wood Manufacturing Capability',
     subtitle: 'Production lines, equipment and annual capacity',
     description:
-      'Production workflow, workshop and shipment records for wooden product manufacturing. Factory information is published once verified by the business.',
+      'Production workflow, workshop and shipment records for wooden product manufacturing.',
     overviewEyebrow: 'Overview',
     overviewTitle: 'Manufacturing capability',
     overviewDescription:
@@ -474,8 +489,9 @@ export const en = {
     galleryEyebrow: 'Gallery',
     galleryTitle: 'Factory & workshop',
     galleryDescription:
-      'Photographs of the production base, workshops and production lines will be displayed here.',
+      'Production base, workshops and production lines — the working environment behind every order.',
     galleryEmptyNotice: 'Factory photographs will be updated once provided by the business.',
+    panoramaAlt: 'Overview photograph of the factory site',
     viewMorePhotos: 'View more photos ({count} in total)',
     processEyebrow: 'Process',
     processTitle: 'Production process',
@@ -503,7 +519,8 @@ export const en = {
     },
     equipmentEyebrow: 'Equipment',
     equipmentTitle: 'Production equipment',
-    equipmentDescription: 'Photographs of the machinery and production lines will be displayed here.',
+    equipmentDescription:
+      'Machinery and production lines used for panel processing, pressing and surface finishing.',
     equipmentPlaceholder: 'Equipment photo to be added',
     equipmentEmptyNotice: 'Equipment details will be updated.',
     loadingEyebrow: 'Loading & Shipment',
@@ -531,7 +548,7 @@ export const en = {
     },
     exhibitionEyebrow: 'Exhibition',
     exhibitionTitle: 'Exhibition gallery',
-    exhibitionDescription: 'Photographs from trade fairs and exhibitions will be displayed here.',
+    exhibitionDescription: 'Trade fairs and exhibitions where we meet buyers and present new products.',
     exhibitionPlaceholder: 'Exhibition photo to be added',
     exhibitionEmptyNotice:
       'Exhibition photographs will be updated once provided by the business.',
@@ -547,7 +564,7 @@ export const en = {
     title: 'Quality Control System',
     subtitle: 'Inspection, testing and certification at every stage',
     description:
-      'Quality is managed at every stage of production — from incoming material to pre-shipment inspection. Certificates and test reports are published once verified by the business.',
+      'Quality is managed at every stage of production — from incoming material to pre-shipment inspection.',
     philosophyEyebrow: 'Philosophy',
     philosophyTitle: 'How we approach quality',
     philosophyDescription:
@@ -624,7 +641,8 @@ export const en = {
     },
     certificatesEyebrow: 'Certificates',
     certificatesTitle: 'Certifications & compliance',
-    certificatesDescription: 'Certificates and compliance information will be updated.',
+    certificatesDescription:
+      'Issuing body, issue date and validity are shown for each certificate — open a record to view the original document.',
     certificateStatus: 'Status: To be confirmed',
     certificateNote:
       'No certificate names, numbers or issuing bodies are displayed until they are verified by the business.',

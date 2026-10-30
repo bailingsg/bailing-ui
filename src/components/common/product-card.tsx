@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/card';
 import { Badge, type BadgeProps } from '@/components/ui/badge';
 import { OptimizedImage } from '@/components/common/optimized-image';
+import { trimToCompleteSentence } from '@/lib/format';
 import { LocaleLink } from '@/i18n/link';
 import { getI18n } from '@/i18n';
 import { defaultLocale, type Locale } from '@/i18n/config';
@@ -112,7 +113,10 @@ export function ProductCard({
       </CardHeader>
 
       <CardContent>
-        <CardDescription>{description}</CardDescription>
+        {/* 简述在后台被限制在 100 字，容易在句子中间截断：先收到完整句，再按 3 行兜底 */}
+        <CardDescription className="line-clamp-3">
+          {trimToCompleteSentence(description)}
+        </CardDescription>
       </CardContent>
     </Card>
   );

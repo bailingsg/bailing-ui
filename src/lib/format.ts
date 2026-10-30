@@ -58,6 +58,34 @@ export function normalizeWhatsAppNumber(raw: string | null | undefined): string 
 }
 
 /**
+ * 把一段可能被截断的文案收成「完整的一句话」。
+ *
+ * 背景（2026-10-30，对比报告首页 / 产品列表两项）：CMS 里的分类描述与产品简述
+ * 有一部分是旧数据导入时按字符数硬截断的，末尾停在半句话
+ * （如「… sustainable production, Sh」），列表卡片上看起来像页面没做完。
+ *
+ * 规则：
+ *   · 已以句末标点结尾 → 原样返回（完整文案不动）；
+ *   · 结尾缺标点（判定为被截断）→ 回退到最后一个完整句号处，宁可少一句，不留半句；
+ *   · 找不到可回退的句号 → 原样返回，交给 CSS 的 line-clamp 兜底。
+ */
+const TERMINAL_PUNCTUATION = /[.!?。！？…"”'’]$/;
+
+export function trimToCompleteSentence(text: string): string {
+  const trimmed = text.trim();
+  if (!trimmed || TERMINAL_PUNCTUATION.test(trimmed)) return trimmed;
+
+  const cut = Math.max(
+    trimmed.lastIndexOf('. '),
+    trimmed.lastIndexOf('。'),
+    trimmed.lastIndexOf('！'),
+    trimmed.lastIndexOf('？'),
+  );
+  // 只在「回退后仍保留一半以上内容」时裁剪，避免为凑整句把一句短文案砍掉大半
+  return cut > 60 && cut >= trimmed.length / 2 ? trimmed.slice(0, cut + 1) : trimmed;
+}
+
+/**
  * 生成 WhatsApp 会话链接（`https://wa.me/<号码>`）。
  *
  * 号码无法规范化时返回 null —— 调用方应回退为纯文本展示，

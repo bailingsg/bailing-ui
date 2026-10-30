@@ -10,6 +10,7 @@ export type {
   ImageCategory,
   ImageCategoryMap,
 } from './types';
+export { splitFactoryPanorama, type FactoryPanoramaSplit } from './panorama';
 export {
   FACTORY_GALLERY_CATEGORIES,
   FACTORY_MAX_IMAGES_PER_GALLERY,

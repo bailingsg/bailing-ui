@@ -1,21 +1,20 @@
 import type { Metadata } from 'next';
-import { ArrowRight } from 'lucide-react';
 import { Container } from '@/components/layout/container';
 import { Section, SectionHeader } from '@/components/layout/section';
 import { ContentPlaceholder } from '@/components/layout/content-placeholder';
 import { CtaBand } from '@/components/layout/cta-band';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { OptimizedImage } from '@/components/common/optimized-image';
 import { ContentFallbackNotice } from '@/components/common/content-fallback-notice';
+import { CategoryCard } from '@/components/home/category-card';
 import { SiteSectionContent, SiteCtaLink } from '@/components/cms/site-section-block';
 import { WebSiteSchema } from '@/components/seo/website-schema';
 import { resolveSeoMetadata } from '@/lib/seo/resolver';
 import { siteConfig } from '@/config/site';
 import { getCmsPageSeo, getSiteSections } from '@/lib/site';
 import { getCategories, isDemoSource } from '@/lib/products';
-import type { ProductCategory } from '@/lib/products/types';
 import { LocaleLink } from '@/i18n/link';
 import { getI18n } from '@/i18n';
 import { defaultLocale, isLocale, type Locale } from '@/i18n/config';
@@ -41,53 +40,6 @@ interface HomePageProps {
 
 function resolveLocale(rawLocale: string): Locale {
   return isLocale(rawLocale) ? rawLocale : defaultLocale;
-}
-
-/**
- * 首页「产品分类」卡片。
- *
- * 描述来自 CMS（单语言英文，各分类长短不一），所以 CTA 用 `mt-auto` 贴卡片底部：
- * 同一行卡片等高时按钮自然对齐，不会随描述行数上下浮动。
- *
- * CTA 是右下角的下划线文字链（无边框、无底色），文案随界面语言切换：
- * 中文「点此查看相关产品」/ 英文 "View related products"，不混排双语。
- */
-function CategoryCard({
-  category,
-  locale,
-  cta,
-}: {
-  category: ProductCategory;
-  locale: Locale;
-  cta: string;
-}) {
-  const href = `/products?category=${encodeURIComponent(category.slug)}`;
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
-          <LocaleLink locale={locale} href={href} className="transition-colors hover:text-primary">
-            {category.name}
-          </LocaleLink>
-        </CardTitle>
-        {category.description ? <CardDescription>{category.description}</CardDescription> : null}
-      </CardHeader>
-      <CardFooter className="mt-auto justify-end">
-        <LocaleLink
-          locale={locale}
-          href={href}
-          className="group inline-flex items-center gap-1.5 text-small font-medium text-primary underline decoration-1 underline-offset-4 transition-colors hover:text-primary-hover"
-        >
-          {cta}
-          <ArrowRight
-            aria-hidden="true"
-            className="size-3.5 shrink-0 transition-transform group-hover:translate-x-0.5"
-          />
-        </LocaleLink>
-      </CardFooter>
-    </Card>
-  );
 }
 
 export async function generateMetadata({ params }: HomePageProps): Promise<Metadata> {

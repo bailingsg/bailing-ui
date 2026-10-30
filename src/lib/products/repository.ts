@@ -58,6 +58,7 @@ export async function getProducts(query: ProductQuery = {}): Promise<PaginatedPr
       pageSize: query.pageSize,
       category: query.category,
       featured: query.featured,
+      search: query.search,
     })}`,
     { tags: [CmsTags.products], revalidate: CmsRevalidate.CONTENT },
   );

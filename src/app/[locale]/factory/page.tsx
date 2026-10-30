@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Section, SectionHeader } from '@/components/layout/section';
 import { CtaBand } from '@/components/layout/cta-band';
 import { FactoryGallery } from '@/components/media/factory-gallery';
+import { OptimizedImage } from '@/components/common/optimized-image';
 import { ProcessFlow } from '@/components/common/process-flow';
 import { WebPageSchema } from '@/components/seo/web-page-schema';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,13 +10,22 @@ import { resolveSeoMetadata } from '@/lib/seo/resolver';
 import { getI18n } from '@/i18n';
 import { defaultLocale, isLocale, type Locale } from '@/i18n/config';
 import { localizedPath } from '@/i18n/paths';
-import { getFactoryOverview, getImages, FACTORY_MAX_IMAGES_PER_GALLERY } from '@/lib/factory';
+import {
+  getFactoryOverview,
+  getImages,
+  splitFactoryPanorama,
+  FACTORY_MAX_IMAGES_PER_GALLERY,
+} from '@/lib/factory';
 
 /**
  * 工厂实力页 /factory（中文：/zh-CN/factory）
  *
- * 结构：Factory Gallery → Production Process → Equipment →
+ * 结构：Factory Panorama → Factory Gallery → Production Process → Equipment →
  *       Loading & Shipment → Exhibition → CTA
+ *
+ * 2026-10-30：原「工厂全景照片」图位复位——厂区代表照（工厂入口）以通栏
+ * 大图置于「工厂与车间」图集上方，并从网格数据中剔除，避免同图重复。
+ * 选图规则见 `lib/factory/panorama.ts`。
  *
  * 2026-10-27 业务方要求隐藏两个模块（代码已移除，需要时从 git 历史取回）：
  *   · PageHero（「木材制造能力」大标题区）—— 视觉隐藏，但页面仍保留一个
@@ -35,6 +45,18 @@ interface FactoryPageProps {
 
 function resolveLocale(rawLocale: string): Locale {
   return isLocale(rawLocale) ? rawLocale : defaultLocale;
+}
+
+const CJK_PATTERN = /[\u4e00-\u9fff]/;
+
+/**
+ * 全景图 alt 兜底：媒体库的 altText / title 多为中文（如「工厂入口」），
+ * 英文站直接输出中文 alt 对可访问性与 SEO 都不利，命中中文时退回本语言描述。
+ */
+function resolvePanoramaAlt(alt: string, locale: Locale, fallback: string): string {
+  if (!alt) return fallback;
+  if (locale !== 'zh-CN' && CJK_PATTERN.test(alt)) return fallback;
+  return alt;
 }
 
 export async function generateMetadata({ params }: FactoryPageProps): Promise<Metadata> {
@@ -68,12 +90,15 @@ export default async function FactoryPage({ params }: FactoryPageProps) {
 
   // 工厂页各板块拉取**全量**素材：预览截断到 FACTORY_MAX_IMAGES_PER_GALLERY（6）
   // 由客户端组件负责，其余照片经「查看更多照片」弹窗展示（2026-10-24 起）。
-  const [facilityImages, equipmentImages, loadingImages, exhibitionImages] = await Promise.all([
+  const [facilitySource, equipmentImages, loadingImages, exhibitionImages] = await Promise.all([
     getImages(['factory', 'production'], Number.POSITIVE_INFINITY),
     getImages(['equipment'], Number.POSITIVE_INFINITY),
     getImages(['loading'], Number.POSITIVE_INFINITY),
     getImages(['exhibition'], Number.POSITIVE_INFINITY),
   ]);
+
+  // 厂区代表照（工厂入口）提到图集上方的通栏全景位，其余照片留在网格里
+  const { panorama, gallery: facilityImages } = splitFactoryPanorama(facilitySource);
 
   const productionSteps = Object.values(m.factory.steps);
   const shipmentPoints = Object.values(m.factory.shipment);
@@ -86,6 +111,28 @@ export default async function FactoryPage({ params }: FactoryPageProps) {
         与辅助技术识别，否则 /factory 会变成整页无 H1。
       */}
       <h1 className="sr-only">{m.factory.title}</h1>
+
+      {/*
+        0. Factory Panorama —— 原「工厂全景照片」图位复位（2026-10-30）
+        该图位在 commit 100e577 中被移除、随后整段概览在 4e077d1 中被隐藏，
+        业务方要求把「工厂入口」这张厂区代表照放回原全景图的位置：页面首个
+        视觉区块、图集上方的一张通栏大图。选图规则见 lib/factory/panorama.ts，
+        选中的那张已从图集数据中剔除，页面不会重复出现同一张照片。
+      */}
+      {panorama ? (
+        <Section size="sm">
+          <figure className="overflow-hidden rounded-xl border border-border bg-surface-elevated">
+            <OptimizedImage
+              src={panorama.url}
+              alt={resolvePanoramaAlt(panorama.alt, locale, m.factory.panoramaAlt)}
+              locale={locale}
+              aspectRatio="16/9"
+              sizes="(min-width: 1280px) 1200px, 100vw"
+              priority
+            />
+          </figure>
+        </Section>
+      ) : null}
 
       {/* 1. Factory Gallery（工厂 + 生产合并图集；预览上限 6 张，其余经「查看更多」展示，见 lib/factory） */}
       <Section tone="surface">

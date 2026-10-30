@@ -6,12 +6,14 @@ import { ContentPlaceholder } from '@/components/layout/content-placeholder';
 import { CtaBand } from '@/components/layout/cta-band';
 import { ProductCard } from '@/components/common/product-card';
 import { ProductFilter } from '@/components/products/product-filter';
+import { ProductSearch } from '@/components/products/product-search';
 import { ProductPagination } from '@/components/products/product-pagination';
 import { DemoDataNotice } from '@/components/products/demo-data-notice';
 import { ContentFallbackNotice } from '@/components/common/content-fallback-notice';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { resolveSeoMetadata } from '@/lib/seo/resolver';
+import { trimToCompleteSentence } from '@/lib/format';
 import { CATALOG_VIEWER_PATH } from '@/lib/catalog';
 import { getCategories, getProducts, isDemoSource, productDetailPath, type ProductListItem } from '@/lib/products';
 import { getI18n } from '@/i18n';
@@ -35,10 +37,19 @@ function resolveLocale(rawLocale: string): Locale {
   return isLocale(rawLocale) ? rawLocale : defaultLocale;
 }
 
-export async function generateMetadata({ params }: ProductsPageProps): Promise<Metadata> {
-  const { locale: rawLocale } = await params;
+export async function generateMetadata({
+  params,
+  searchParams,
+}: ProductsPageProps): Promise<Metadata> {
+  const [{ locale: rawLocale }, query] = await Promise.all([params, searchParams]);
   const locale = resolveLocale(rawLocale);
   const { m } = getI18n(locale);
+
+  /**
+   * 搜索结果页不收录：`?q=` 会组合出无穷多 URL，收录进去就是重复内容。
+   * canonical 仍指向 /products，抓取预算留给分类页与产品详情。
+   */
+  const searching = Boolean(firstValue(query.q)?.trim());
 
   return resolveSeoMetadata({
     title: m.products.metaTitle,
@@ -46,6 +57,7 @@ export async function generateMetadata({ params }: ProductsPageProps): Promise<M
     path: '/products',
     titleTemplateKey: 'product',
     locale,
+    index: !searching,
   });
 }
 
@@ -67,12 +79,14 @@ export default async function ProductsPage({ params, searchParams }: ProductsPag
   const { t, m } = getI18n(locale);
 
   const category = firstValue(query.category)?.trim() || undefined;
+  /** 关键词搜索（2026-10-30）：?q=，与 category 叠加，空串视为未搜索 */
+  const keyword = firstValue(query.q)?.trim() || undefined;
   const rawPage = Number(firstValue(query.page));
   const page = Number.isFinite(rawPage) && rawPage >= 1 ? Math.floor(rawPage) : 1;
 
   const [categories, result] = await Promise.all([
     getCategories(),
-    getProducts({ category, page, pageSize: PAGE_SIZE }),
+    getProducts({ category, search: keyword, page, pageSize: PAGE_SIZE }),
   ]);
 
   /**
@@ -111,10 +125,11 @@ export default async function ProductsPage({ params, searchParams }: ProductsPag
         }
       />
 
-      {/* 分类筛选 */}
+      {/* 搜索 + 分类筛选 */}
       <Section size="sm" tone="surface">
         <div className="flex flex-col gap-4">
           {showDemoNotice ? <DemoDataNotice locale={locale} /> : null}
+          <ProductSearch locale={locale} query={keyword} category={category} className="max-w-xl" />
           <ProductFilter categories={filterCategories} activeSlug={category} locale={locale} />
         </div>
       </Section>
@@ -123,8 +138,20 @@ export default async function ProductsPage({ params, searchParams }: ProductsPag
       <Section>
         <SectionHeader
           eyebrow={m.products.catalogEyebrow}
-          title={activeCategory ? activeCategory.name : m.products.allProducts}
-          description={activeCategory?.description ?? m.products.allProductsDescription}
+          title={
+            keyword
+              ? t('products.searchResultsFor', { query: keyword })
+              : activeCategory
+                ? activeCategory.name
+                : m.products.allProducts
+          }
+          description={
+            keyword
+              ? m.products.allProductsDescription
+              : activeCategory?.description
+                ? trimToCompleteSentence(activeCategory.description)
+                : m.products.allProductsDescription
+          }
           action={
             <span className="text-small text-text-muted">
               {result.total === 1
@@ -164,9 +191,13 @@ export default async function ProductsPage({ params, searchParams }: ProductsPag
             <ContentPlaceholder
               locale={locale}
               title={
-                category ? m.products.emptyCategoryTitle : m.products.emptyTitle
+                keyword
+                  ? m.products.emptySearchTitle
+                  : category
+                    ? m.products.emptyCategoryTitle
+                    : m.products.emptyTitle
               }
-              note={m.products.emptyNote}
+              note={keyword ? m.products.emptySearchNote : m.products.emptyNote}
               minHeightClass="min-h-56"
             />
           </div>
@@ -176,6 +207,7 @@ export default async function ProductsPage({ params, searchParams }: ProductsPag
           page={result.page}
           totalPages={result.totalPages}
           category={category}
+          query={keyword}
           locale={locale}
         />
       </Section>
